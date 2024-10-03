@@ -3,16 +3,15 @@
 function upgradeLoader () {
   local ARCNIC="$(readConfigKey "arc.nic" "${USER_CONFIG_FILE}")"
   local ARCBRANCH="$(readConfigKey "arc.branch" "${USER_CONFIG_FILE}")"
-  rm -f "${TMP_PATH}/check.update"
   rm -f "${TMP_PATH}/arc.img.zip"
   if [ -z "${1}" ]; then
     # Check for new Version
     idx=0
     while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
       if [ "${ARCNIC}" == "auto" ]; then
-        local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
+        local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-e/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
       else
-        local TAG="$(curl  --interface ${ARCNIC} -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
+        local TAG="$(curl  --interface ${ARCNIC} -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-e/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
       fi
       if [ -n "${TAG}" ]; then
         break
@@ -23,30 +22,13 @@ function upgradeLoader () {
   else
     local TAG="${1}"
   fi
-  if [ -n "${TAG}" ]; then
-    curl -skL "https://github.com/AuxXxilium/arc/releases/download/${TAG}/check.update" -o "${TMP_PATH}/check.update"
-    if [ -f "${TMP_PATH}/check.update" ]; then
-      local UPDATE=$(cat "${TMP_PATH}/check.update" | sed -e 's/\.//g' )
-      local ARC_VERSION=$(cat "${PART1_PATH}/ARC-VERSION" | sed -e 's/\.//g' )
-      if [ ${ARC_VERSION} -lt ${UPDATE} ]; then
-        dialog --backtitle "$(backtitle)" --title "Upgrade Loader" \
-          --yesno "Current Config not compatible to new Version!\nDo not restore Config!\nDo you want to upgrade?" 0 0
-        if [ $? -eq 0 ]; then
-          rm -f "${TMP_PATH}/check.update"
-        else
-          return 1
-        fi
-      fi
-    else
-      updateFaileddialog
-    fi
     (
       # Download update file
       echo "Downloading ${TAG}"
       if [ "${ARCBRANCH}" != "stable" ]; then
-        local URL="https://github.com/AuxXxilium/arc/releases/download/${TAG}/arc-${TAG}-${ARCBRANCH}.img.zip"
+        local URL="https://github.com/AuxXxilium/arc-e/releases/download/${TAG}/arc-${TAG}-${ARCBRANCH}.img.zip"
       else
-        local URL="https://github.com/AuxXxilium/arc/releases/download/${TAG}/arc-${TAG}.img.zip"
+        local URL="https://github.com/AuxXxilium/arc-e/releases/download/${TAG}/arc-${TAG}.img.zip"
       fi
       if [ "${ARCNIC}" == "auto" ]; then
         curl -#kL "${URL}" -o "${TMP_PATH}/arc.img.zip" 2>&1 | while IFS= read -r -n1 char; do
@@ -99,17 +81,14 @@ function updateLoader() {
   local ARCNIC="$(readConfigKey "arc.nic" "${USER_CONFIG_FILE}")"
   local ARCMODE="$(readConfigKey "arc.mode" "${USER_CONFIG_FILE}")"
   local ARCBRANCH="$(readConfigKey "arc.branch" "${USER_CONFIG_FILE}")"
-  rm -f "${TMP_PATH}/check.update"
-  rm -f "${TMP_PATH}/checksum.sha256"
-  rm -f "${TMP_PATH}/update.zip"
   if [ -z "${1}" ]; then
     # Check for new Version
     idx=0
     while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
       if [ "${ARCNIC}" == "auto" ]; then
-        local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
+        local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-e/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
       else
-        local TAG="$(curl  --interface ${ARCNIC} -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
+        local TAG="$(curl  --interface ${ARCNIC} -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-e/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
       fi
       if [ -n "${TAG}" ]; then
         break
@@ -121,36 +100,13 @@ function updateLoader() {
     local TAG="${1}"
   fi
   if [ -n "${TAG}" ]; then
-    curl -skL "https://github.com/AuxXxilium/arc/releases/download/${TAG}/check.update" -o "${TMP_PATH}/check.update"
-    if [ -f "${TMP_PATH}/check.update" ]; then
-      local UPDATE_VERSION=$(cat "${TMP_PATH}/check.update" | sed -e 's/\.//g' )
-      local ARC_VERSION=$(cat "${PART1_PATH}/ARC-VERSION" | sed -e 's/\.//g' )
-      if [ ${ARC_VERSION} -lt ${UPDATE_VERSION} ] && [ "${ARCMODE}" == "config" ]; then
-        dialog --backtitle "$(backtitle)" --title "Upgrade Loader" \
-          --yesno "Config is not compatible to new Version!\nPlease reconfigure Loader after Update!\nDo you want to update?" 0 0
-        if [ $? -eq 0 ]; then
-          rm -f "${TMP_PATH}/check.update"
-        else
-          return 1
-        fi
-      elif [ ${ARC_VERSION} -lt ${UPDATE_VERSION} ] && [ "${ARCMODE}" == "automated" ]; then
-        dialog --backtitle "$(backtitle)" --title "Full-Update Loader" \
-          --infobox "Config is not compatible to new Version!\nUpdate not possible!\nPlease reflash Loader." 0 0
-        sleep 5
-        updateFaileddialog
-      fi
-    else
-      updateFaileddialog
-    fi
     (
       # Download update file
       echo "Downloading ${TAG}"
       if [ "${ARCBRANCH}" != "stable" ]; then
-        local URL="https://github.com/AuxXxilium/arc/releases/download/${TAG}/update-${ARCBRANCH}.zip"
-        local SHA="https://github.com/AuxXxilium/arc/releases/download/${TAG}/checksum-${ARCBRANCH}.sha256"
+        local URL="https://github.com/AuxXxilium/arc-e/releases/download/${TAG}/update-${ARCBRANCH}.zip"
       else
-        local URL="https://github.com/AuxXxilium/arc/releases/download/${TAG}/update.zip"
-        local SHA="https://github.com/AuxXxilium/arc/releases/download/${TAG}/checksum.sha256"
+        local URL="https://github.com/AuxXxilium/arc-e/releases/download/${TAG}/update.zip"
       fi
       if [ "${ARCNIC}" == "auto" ]; then
         curl -#kL "${URL}" -o "${TMP_PATH}/update.zip" 2>&1 | while IFS= read -r -n1 char; do
@@ -158,57 +114,23 @@ function updateLoader() {
           [[ $char == % ]] && echo "$progress%" && progress="" && keep=0 ;
           [[ $keep == 1 ]] && progress="$progress$char" ;
         done
-        curl -skL "${SHA}" -o "${TMP_PATH}/checksum.sha256"
       else
         curl --interface ${ARCNIC} -#kL "${URL}" -o "${TMP_PATH}/update.zip" 2>&1 | while IFS= read -r -n1 char; do
           [[ $char =~ [0-9] ]] && keep=1 ;
           [[ $char == % ]] && echo "$progress%" && progress="" && keep=0 ;
           [[ $keep == 1 ]] && progress="$progress$char" ;
         done
-        curl --interface ${ARCNIC} -skL "${SHA}" -o "${TMP_PATH}/checksum.sha256"
       fi
       if [ -f "${TMP_PATH}/update.zip" ]; then
         echo "Download successful!"
-        if [ "$(sha256sum "${TMP_PATH}/update.zip" | awk '{print $1}')" == "$(cat ${TMP_PATH}/checksum.sha256 | awk '{print $1}')" ]; then
-          echo "Download successful!"
-          echo "Backup Arc Config File..."
-          cp -f "${S_FILE}" "/tmp/serials.yml"
-          echo "Cleaning up..."
-          rm -rf "${ADDONS_PATH}"
-          mkdir -p "${ADDONS_PATH}"
-          rm -rf "${MODULES_PATH}"
-          mkdir -p "${MODULES_PATH}"
           echo "Installing new Loader Image..."
           unzip -oq "${TMP_PATH}/update.zip" -d "${PART3_PATH}"
           mv -f "${PART3_PATH}/grub.cfg" "${USER_GRUB_CONFIG}"
-          mv -f "${PART3_PATH}/ARC-VERSION" "${PART1_PATH}/ARC-VERSION"
+          mv -f "${PART3_PATH}/ARC-BASE-VERSION" "${PART1_PATH}/ARC-VERSION"
           mv -f "${PART3_PATH}/ARC-BRANCH" "${PART1_PATH}/ARC-BRANCH"
           rm -f "${TMP_PATH}/update.zip"
-          # Rebuild modules if model/build is selected
-          local PRODUCTVER="$(readConfigKey "productver" "${USER_CONFIG_FILE}")"
-          if [ -n "${PRODUCTVER}" ]; then
-            local PLATFORM="$(readConfigKey "platform" "${USER_CONFIG_FILE}")"
-            local KVER="$(readConfigKey "platforms.${PLATFORM}.productvers.\"${PRODUCTVER}\".kver" "${P_FILE}")"
-            # Modify KVER for Epyc7002
-            [ "${PLATFORM}" == "epyc7002" ] && KVERP="${PRODUCTVER}-${KVER}" || KVERP="${KVER}"
-          fi
-          if [ -n "${PLATFORM}" ] && [ -n "${KVERP}" ]; then
-            writeConfigKey "modules" "{}" "${USER_CONFIG_FILE}"
-            while read -r ID DESC; do
-              writeConfigKey "modules.${ID}" "" "${USER_CONFIG_FILE}"
-            done < <(getAllModules "${PLATFORM}" "${KVERP}")
-          fi
-          echo "Restore Arc Config File..."
-          cp -f "/tmp/serials.yml" "${S_FILE}"
-          CONFHASHFILE="$(sha256sum "${S_FILE}" | awk '{print $1}')"
-          writeConfigKey "arc.confhash" "${CONFHASHFILE}" "${USER_CONFIG_FILE}"
           echo "Update done!"
           sleep 2
-        else
-          echo "Checksum mismatch!"
-          sleep 5
-          updateFailed
-        fi
       else
         echo "Error downloading new Version!"
         sleep 5
@@ -216,6 +138,8 @@ function updateLoader() {
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Full-Update Loader" \
       --progressbox "Updating Loader..." 20 70
+  else
+    updateFaileddialog
   fi
   return 0
 }
