@@ -46,7 +46,7 @@ jobs:
       - name: Pack
         run: |
           if [ -n "${{ env.VERSION }}" ]; then
-            zip -9 "arc-${{ env.VERSION }}.zip" "./system" -r
+            zip -9 "system-${{ env.VERSION }}.zip" "./system" -r
           fi
 
       # Publish a release if is a tag
@@ -65,4 +65,4 @@ jobs:
             - Full Changelog and Arc Patch (Decryption Key) are available in my Discord.
             - Release: ${{ env.BUILD_TIME }}
           artifacts: |
-            arc-*.zip
+            system-*.zip
