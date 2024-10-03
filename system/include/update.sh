@@ -17,6 +17,7 @@ function upgradeLoader () {
   else
     local TAG="${1}"
   fi
+  if [ -n "${TAG}" ]; then
     (
       # Download update file
       echo "Downloading ${TAG}"
@@ -58,6 +59,8 @@ function upgradeLoader () {
       sleep 2
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Upgrade Loader" \
       --progressbox "Upgrading Loader..." 20 70
+  else
+    updateFaileddialog
   fi
   return 0
 }
@@ -163,6 +166,8 @@ function updateAddons() {
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Update Addons" \
       --progressbox "Updating Addons..." 20 70
+  else
+    updateFaileddialog
   fi
   return 0
 }
@@ -205,6 +210,8 @@ function updatePatches() {
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Update Patches" \
       --progressbox "Updating Patches..." 20 70
+  else
+    updateFaileddialog
   fi
   return 0
 }
@@ -247,6 +254,8 @@ function updateCustom() {
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Update Custom" \
       --progressbox "Updating Custom..." 20 70
+  else
+    updateFaileddialog
   fi
   return 0
 }
@@ -300,6 +309,8 @@ function updateModules() {
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Update Modules" \
       --progressbox "Updating Modules..." 20 70
+  else
+    updateFaileddialog
   fi
   return 0
 }
@@ -350,6 +361,8 @@ function updateConfigs() {
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Update Configs" \
       --progressbox "Updating Configs..." 20 70
+  else
+    updateFaileddialog
   fi
   return 0
 }
@@ -396,6 +409,8 @@ function updateLKMs() {
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Update LKMs" \
       --progressbox "Updating LKMs..." 20 70
+  else
+    updateFaileddialog
   fi
   return 0
 }
