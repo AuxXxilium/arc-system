@@ -483,32 +483,29 @@ function livepatch() {
     fi
   fi
   if [ "${PVALID}" == "false" ]; then
-    OFFLINE="$(readConfigKey "arc.offline" "${USER_CONFIG_FILE}")"
-    if [ "${OFFLINE}" == "false" ]; then
-      # Load update functions
-      . ${ARC_PATH}/include/update.sh
-      # Update Patches
-      echo -e "Updating Patches..."
-      updatePatches
-      # Patch zImage
-      echo -n "Patching zImage"
-      if ${ARC_PATH}/zimage-patch.sh; then
+    # Load update functions
+    . ${ARC_PATH}/include/update.sh
+    # Update Patches
+    echo -e "Updating Patches..."
+    updatePatches
+    # Patch zImage
+    echo -n "Patching zImage"
+    if ${ARC_PATH}/zimage-patch.sh; then
+      echo -e " - successful!"
+      PVALID="true"
+    else
+      echo -e " - failed!"
+      PVALID="false"
+    fi
+    if [ "${PVALID}" == "true" ]; then
+      # Patch Ramdisk
+      echo -n "Patching Ramdisk"
+      if ${ARC_PATH}/ramdisk-patch.sh; then
         echo -e " - successful!"
         PVALID="true"
       else
         echo -e " - failed!"
         PVALID="false"
-      fi
-      if [ "${PVALID}" == "true" ]; then
-        # Patch Ramdisk
-        echo -n "Patching Ramdisk"
-        if ${ARC_PATH}/ramdisk-patch.sh; then
-          echo -e " - successful!"
-          PVALID="true"
-        else
-          echo -e " - failed!"
-          PVALID="false"
-        fi
       fi
     fi
   fi
@@ -531,27 +528,19 @@ function livepatch() {
 function ntpCheck() {
   LAYOUT="$(readConfigKey "layout" "${USER_CONFIG_FILE}")"
   KEYMAP="$(readConfigKey "keymap" "${USER_CONFIG_FILE}")"
-  if [ "${OFFLINE}" == "false" ]; then
-    # Timezone
-    REGION="$(readConfigKey "time.region" "${USER_CONFIG_FILE}")"
-    TIMEZONE="$(readConfigKey "time.timezone" "${USER_CONFIG_FILE}")"
-    if [ -z "${REGION}" ] || [ -z "${TIMEZONE}" ]; then
-      if [ "${ARCNIC}" == "auto" ]; then
-        REGION="$(curl -m 5 -v "http://ip-api.com/line?fields=timezone" 2>/dev/null | tr -d '\n' | cut -d '/' -f1)"
-        TIMEZONE="$(curl -m 5 -v "http://ip-api.com/line?fields=timezone" 2>/dev/null | tr -d '\n' | cut -d '/' -f2)"
-        [ -z "${KEYMAP}" ] && KEYMAP="$(curl -m 5 -v "http://ip-api.com/line?fields=countryCode" 2>/dev/null | tr '[:upper:]' '[:lower:]')"
-      else
-        REGION="$(curl --interface ${ARCNIC} -m 5 -v "http://ip-api.com/line?fields=timezone" 2>/dev/null | tr -d '\n' | cut -d '/' -f1)"
-        TIMEZONE="$(curl --interface ${ARCNIC} -m 5 -v "http://ip-api.com/line?fields=timezone" 2>/dev/null | tr -d '\n' | cut -d '/' -f2)"
-        [ -z "${KEYMAP}" ] && KEYMAP="$(curl --interface ${ARCNIC} -m 5 -v "http://ip-api.com/line?fields=countryCode" 2>/dev/null | tr '[:upper:]' '[:lower:]')"
-      fi
-      writeConfigKey "time.region" "${REGION}" "${USER_CONFIG_FILE}"
-      writeConfigKey "time.timezone" "${TIMEZONE}" "${USER_CONFIG_FILE}"
-    fi
-    if [ -n "${REGION}" ] && [ -n "${TIMEZONE}" ]; then
-      ln -sf "/usr/share/zoneinfo/right/${REGION}/${TIMEZONE}" /etc/localtime
-      #hwclock --systohc
-    fi
+  # Timezone
+  REGION="$(readConfigKey "time.region" "${USER_CONFIG_FILE}")"
+  TIMEZONE="$(readConfigKey "time.timezone" "${USER_CONFIG_FILE}")"
+  if [ -z "${REGION}" ] || [ -z "${TIMEZONE}" ]; then
+    REGION="$(curl -m 5 -v "http://ip-api.com/line?fields=timezone" 2>/dev/null | tr -d '\n' | cut -d '/' -f1)"
+    TIMEZONE="$(curl -m 5 -v "http://ip-api.com/line?fields=timezone" 2>/dev/null | tr -d '\n' | cut -d '/' -f2)"
+    [ -z "${KEYMAP}" ] && KEYMAP="$(curl -m 5 -v "http://ip-api.com/line?fields=countryCode" 2>/dev/null | tr '[:upper:]' '[:lower:]')"
+    writeConfigKey "time.region" "${REGION}" "${USER_CONFIG_FILE}"
+    writeConfigKey "time.timezone" "${TIMEZONE}" "${USER_CONFIG_FILE}"
+  fi
+  if [ -n "${REGION}" ] && [ -n "${TIMEZONE}" ]; then
+    ln -sf "/usr/share/zoneinfo/right/${REGION}/${TIMEZONE}" /etc/localtime
+    #hwclock --systohc
   fi
   if [ -z "${LAYOUT}" ]; then
     [ -n "${KEYMAP}" ] && KEYMAP="$(echo ${KEYMAP} | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]' | tr -d '[:punct:]' | tr -d '[:digit:]')"
@@ -559,50 +548,6 @@ function ntpCheck() {
     [ -z "${KEYMAP}" ] && KEYMAP="us"
     loadkeys ${KEYMAP}
   fi
-}
-
-###############################################################################
-# Offline Check
-function offlineCheck() {
-  CNT=0
-  local ARCNIC=""
-  local OFFLINE="${1}"
-  if [ "${OFFLINE}" == "true" ]; then
-    ARCNIC="offline"
-    OFFLINE="true"
-  elif [ "${OFFLINE}" == "false" ]; then
-    while true; do
-      NEWTAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | sort -rV | head -1)"
-      CNT=$((${CNT} + 1))
-      if [ -n "${NEWTAG}" ]; then
-        ARCNIC="auto"
-        break
-      elif [ ${CNT} -ge 3 ]; then
-        ETHX="$(ls /sys/class/net/ 2>/dev/null | grep eth)"
-        for ETH in ${ETHX}; do
-          # Update Check
-          NEWTAG="$(curl --interface ${ETH} -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | sort -rV | head -1)"
-          if [ -n "${NEWTAG}" ]; then
-            ARCNIC="${ETH}"
-            break 2
-          fi
-        done
-        break
-      fi
-    done
-    if [ -n "${ARCNIC}" ]; then
-      OFFLINE="false"
-    elif [ -z "${ARCNIC}" ]; then
-      dialog --backtitle "$(backtitle)" --title "Online Check" \
-        --infobox "Could not connect to Github.\nSwitch to Offline Mode!" 0 0
-      sleep 5
-      ARCNIC="offline"
-      OFFLINE="true"
-    fi
-  fi
-  [ "${OFFLINE}" == "true" ] && cp -f "${PART3_PATH}/offline/offline.json" "${ARC_PATH}/include/offline.json"
-  writeConfigKey "arc.nic" "${ARCNIC}" "${USER_CONFIG_FILE}"
-  writeConfigKey "arc.offline" "${OFFLINE}" "${USER_CONFIG_FILE}"
 }
 
 ###############################################################################
@@ -650,30 +595,9 @@ function systemCheck () {
       cp -f "${S_FILE_ARC}" "${S_FILE}"
       writeConfigKey "arc.key" "${ARCKEY}" "${USER_CONFIG_FILE}"
     else
-      [ -f "${S_FILE}.bak" ] && cp -f "${S_FILE}" "${S_FILE}.bak"
+      [ -f "${S_FILE}.bak" ] && cp -f "${S_FILE}.bak" "${S_FILE}"
       writeConfigKey "arc.key" "" "${USER_CONFIG_FILE}"
       writeConfigKey "arc.patch" "false" "${USER_CONFIG_FILE}"
     fi
-  fi
-}
-
-###############################################################################
-# Check Dynamic Mode
-function dynCheck () {
-  ARCDYN="$(readConfigKey "arc.dynamic" "${USER_CONFIG_FILE}")"
-  OFFLINE="$(readConfigKey "arc.offline" "${USER_CONFIG_FILE}")"
-  if [ "${ARCDYN}" == "true" ] && [ "${OFFLINE}" == "false" ] && [ ! -f "${TMP_PATH}/dynamic" ]; then
-    curl -skL "https://github.com/AuxXxilium/arc/archive/refs/heads/dev.zip" -o "${TMP_PATH}/dev.zip"
-    unzip -qq -o "${TMP_PATH}/dev.zip" -d "${TMP_PATH}" 2>/dev/null
-    cp -rf "${TMP_PATH}/arc-dev/files/initrd/opt/arc/"* "${ARC_PATH}"
-    rm -rf "${TMP_PATH}/arc-dev"
-    rm -f "${TMP_PATH}/dev.zip"
-    VERSION="Dynamic-Dev"
-    sed 's/^ARC_VERSION=.*/ARC_VERSION="'${VERSION}'"/' -i ${ARC_PATH}/include/consts.sh
-    echo "true" >"${TMP_PATH}/dynamic"
-    clear
-    exec init.sh
-  elif [ "${ARCDYN}" == "false" ] || [ "${OFFLINE}" == "true" ]; then
-    [ -f "${TMP_PATH}/dynamic" ] && rm -f "${TMP_PATH}/dynamic" >/dev/null 2>&1 || true
   fi
 }
