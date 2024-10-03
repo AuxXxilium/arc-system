@@ -5,6 +5,7 @@ set -e
 
 . ${ARC_PATH}/include/functions.sh
 . ${ARC_PATH}/include/addons.sh
+. ${ARC_PATH}/include/compat.sh
 
 # Clear logs for dbgutils addons
 rm -rf "${PART1_PATH}/logs" >/dev/null 2>&1 || true
@@ -19,6 +20,9 @@ ARCBRANCH="$(readConfigKey "arc.branch" "${USER_CONFIG_FILE}")"
 BUS=$(getBus "${LOADER_DISK}")
 # Check if machine has EFI
 [ -d /sys/firmware/efi ] && EFI=1 || EFI=0
+
+# Call compatboot helper
+compatboot
 
 # Print Title centralized
 clear
@@ -287,8 +291,6 @@ elif [ "${DIRECTBOOT}" == "false" ]; then
   rm -f WB WC
   echo -en "\r$(printf "%$((${#MSG} * 2))s" " ")\n"
 
-  echo -e "\033[1;37mLoading DSM kernel...\033[0m"
-
   DSMLOGO="$(readConfigKey "dsmlogo" "${USER_CONFIG_FILE}")"
   if [ "${DSMLOGO}" == "true" ] && [ -c "/dev/fb0" ]; then
     [[ "${IPCON}" =~ ^169\.254\..* ]] && IPCON=""
@@ -301,14 +303,6 @@ elif [ "${DIRECTBOOT}" == "false" ]; then
     [ -f "${TMP_PATH}/qrcode_boot.png" ] && echo | fbv -acufi "${TMP_PATH}/qrcode_boot.png" >/dev/null 2>/dev/null || true
   fi
 
-  # Executes DSM kernel via KEXEC
-  KEXECARGS="-a"
-  if [ $(echo "${KVER:-4}" | cut -d'.' -f1) -lt 4 ] && [ ${EFI} -eq 1 ]; then
-    echo -e "\033[1;33mWarning, running kexec with --noefi param, strange things will happen!!\033[0m"
-    KEXECARGS+=" --noefi"
-  fi
-  kexec ${KEXECARGS} -l "${MOD_ZIMAGE_FILE}" --initrd "${MOD_RDGZ_FILE}" --command-line="${CMDLINE_LINE}" >"${LOG_FILE}" 2>&1 || dieLog
-
   for T in $(busybox w 2>/dev/null | grep -v 'TTY' | awk '{print $2}'); do
     if [ -n "${IPCON}" ]; then
       [ -w "/dev/${T}" ] && echo -e "\n\033[1;37mThis interface will not be operational. Wait a few minutes.\033[0m\nUse \033[1;34mhttp://${IPCON}:5000\033[0m or try \033[1;34mhttp://find.synology.com/ \033[0mto find DSM and proceed.\n" >"/dev/${T}" 2>/dev/null || true
@@ -316,6 +310,15 @@ elif [ "${DIRECTBOOT}" == "false" ]; then
       [ -w "/dev/${T}" ] && echo -e "\n\033[1;37mThis interface will not be operational. Wait a few minutes.\nNo IP found. \033[0m\nTry \033[1;34mhttp://find.synology.com/ \033[0mto find DSM and proceed.\n" >"/dev/${T}" 2>/dev/null || true
     fi
   done
+
+  echo -e "\033[1;37mLoading DSM Kernel and Ramdisk...\033[0m"
+  # Executes DSM kernel via KEXEC
+  KEXECARGS="-a"
+  if [ $(echo "${KVER:-4}" | cut -d'.' -f1) -lt 4 ] && [ ${EFI} -eq 1 ]; then
+    echo -e "\033[1;33mWarning, running kexec with --noefi param, strange things will happen!!\033[0m"
+    KEXECARGS+=" --noefi"
+  fi
+  kexec ${KEXECARGS} -l "${MOD_ZIMAGE_FILE}" --initrd "${MOD_RDGZ_FILE}" --command-line="${CMDLINE_LINE}" >"${LOG_FILE}" 2>&1 || dieLog
 
   echo -e "\033[1;37mBooting DSM...\033[0m"
   # Boot to DSM

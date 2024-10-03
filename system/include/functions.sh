@@ -595,7 +595,7 @@ function systemCheck () {
       cp -f "${S_FILE_ARC}" "${S_FILE}"
       writeConfigKey "arc.key" "${ARCKEY}" "${USER_CONFIG_FILE}"
     else
-      [ -f "${S_FILE}.bak" ] && cp -f "${S_FILE}" "${S_FILE}.bak"
+      [ -f "${S_FILE}.bak" ] && cp -f "${S_FILE}.bak" "${S_FILE}"
       writeConfigKey "arc.key" "" "${USER_CONFIG_FILE}"
       writeConfigKey "arc.patch" "false" "${USER_CONFIG_FILE}"
     fi
