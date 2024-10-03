@@ -817,23 +817,16 @@ function updateMenu() {
     dialog --backtitle "$(backtitle)" --colors --cancel-label "Exit" \
       --menu "Choose an Option" 0 0 0 \
       0 "Buildroot Branch: \Z1${ARCBRANCH}\Zn" \
-      1 "Automated Update Mode" \
-      2 "Full-Update Loader \Z1(update)\Zn" \
-      3 "Full-Upgrade Loader \Z1(reflash)\Zn" \
+      1 "Update Base Image \Z1(update)\Zn" \
       2>"${TMP_PATH}/resp"
     [ $? -ne 0 ] && break
     case "$(cat ${TMP_PATH}/resp)" in
       1)
-        dialog --backtitle "$(backtitle)" --title "Automated Update" --aspect 18 \
-          --msgbox "Loader will proceed Automated Update Mode.\nPlease wait until progress is finished!" 0 0
-        arcUpdate
-        ;;
-      2)
         # Ask for Tag
         TAG=""
-        NEWVER="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | sort -rV | head -1)"
-        OLDVER="$(cat ${PART1_PATH}/ARC-VERSION)"
-        dialog --clear --backtitle "$(backtitle)" --title "Full-Update Loader" \
+        NEWVER="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-e/releases" | jq -r ".[].tag_name" | sort -rV | head -1)"
+        OLDVER="$(cat ${PART1_PATH}/ARC-BASE-VERSION)"
+        dialog --clear --backtitle "$(backtitle)" --title "Update Base Image" \
           --menu "Current: ${OLDVER} -> Which Version?" 7 50 0 \
           1 "Latest ${NEWVER}" \
           2 "Select Version" \
@@ -843,40 +836,13 @@ function updateMenu() {
         if [ ${opts} -eq 1 ]; then
           TAG=""
         elif [ ${opts} -eq 2 ]; then
-          dialog --backtitle "$(backtitle)" --title "Full-Update Loader" \
+          dialog --backtitle "$(backtitle)" --title "Update Base Image" \
           --inputbox "Type the Version!" 0 0 \
           2>"${TMP_PATH}/input"
           TAG=$(cat "${TMP_PATH}/input")
           [ -z "${TAG}" ] && return 1
         fi
         if updateLoader "${TAG}"; then
-          writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
-          BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
-          exec reboot && exit 0
-        fi
-        ;;
-      3)
-        # Ask for Tag
-        TAG=""
-        NEWVER="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | sort -rV | head -1)"
-        OLDVER="$(cat ${PART1_PATH}/ARC-VERSION)"
-        dialog --clear --backtitle "$(backtitle)" --title "Upgrade Loader" \
-          --menu "Current: ${OLDVER} -> Which Version?" 7 50 0 \
-          1 "Latest ${NEWVER}" \
-          2 "Select Version" \
-        2>"${TMP_PATH}/opts"
-        [ $? -ne 0 ] && break
-        opts=$(cat ${TMP_PATH}/opts)
-        if [ ${opts} -eq 1 ]; then
-          TAG=""
-        elif [ ${opts} -eq 2 ]; then
-          dialog --backtitle "$(backtitle)" --title "Upgrade Loader" \
-          --inputbox "Type the Version!" 0 0 \
-          2>"${TMP_PATH}/input"
-          TAG=$(cat "${TMP_PATH}/input")
-          [ -z "${TAG}" ] && return 1
-        fi
-        if upgradeLoader "${TAG}"; then
           writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
           BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
           exec reboot && exit 0
@@ -979,7 +945,7 @@ function sysinfo() {
   EXTERNALCONTROLLER="$(readConfigKey "device.externalcontroller" "${USER_CONFIG_FILE}")"
   HARDDRIVES="$(readConfigKey "device.harddrives" "${USER_CONFIG_FILE}")"
   DRIVES="$(readConfigKey "device.drives" "${USER_CONFIG_FILE}")"
-  MODULESINFO="$(lsmod | awk -F' ' '{print $1}' | grep -v 'Module')"
+  ARC_BASE_VERSION="$(cat ${PART1_PATH}/ARC-BASE-VERSION)"
   MODULESVERSION="$(cat "${MODULES_PATH}/VERSION")"
   ADDONSVERSION="$(cat "${ADDONS_PATH}/VERSION")"
   LKMVERSION="$(cat "${LKMS_PATH}/VERSION")"
@@ -1045,6 +1011,7 @@ function sysinfo() {
   done
   # Print Config Informations
   TEXT+="\n\Z4> Arc: ${ARC_VERSION}\Zn"
+  TEXT+="\n  Base: \Zb${ARC_BASE_VERSION}\Zn"
   TEXT+="\n  Branch: \Zb${ARCBRANCH}\Zn"
   TEXT+="\n  Subversion: \ZbAddons ${ADDONSVERSION} | Configs ${CONFIGSVERSION} | LKM ${LKMVERSION} | Modules ${MODULESVERSION} | Patches ${PATCHESVERSION}\Zn"
   TEXT+="\n  Config | Build: \Zb${CONFDONE} | ${BUILDDONE}\Zn"
@@ -1061,7 +1028,6 @@ function sysinfo() {
     TEXT+="\n"
     TEXT+="\n  Config not completed!\n"
   fi
-  TEXT+="\n  Modules loaded: \Zb${MODULESINFO}\Zn"
   if [ "${CONFDONE}" == "true" ]; then
     [ -n "${USERCMDLINEINFO}" ] && TEXT+="\n  User Cmdline: \Zb${USERCMDLINEINFO}\Zn"
     TEXT+="\n  User Synoinfo: \Zb${USERSYNOINFO}\Zn"
@@ -2000,7 +1966,6 @@ function rebootMenu() {
   # Selectable Reboot Options
   echo -e "config \"Arc: Config Mode\"" >>"${TMP_PATH}/opts"
   echo -e "update \"Arc: Automated Update Mode\"" >>"${TMP_PATH}/opts"
-  echo -e "init \"Arc: Restart Loader Init\"" >>"${TMP_PATH}/opts"
   echo -e "network \"Arc: Restart Network Service\"" >>"${TMP_PATH}/opts"
   if [ "${BUILDDONE}" == "true" ]; then
     echo -e "recovery \"DSM: Recovery Mode\"" >>"${TMP_PATH}/opts"
@@ -2024,9 +1989,6 @@ function rebootMenu() {
   elif [ "${REDEST}" == "shell" ]; then
     clear
     exit 0
-  elif [ "${REDEST}" == "init" ]; then
-    clear
-    init.sh
   elif [ "${REDEST}" == "network" ]; then
     clear
     /etc/init.d/S41dhcpcd restart
