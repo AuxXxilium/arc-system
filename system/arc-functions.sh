@@ -818,13 +818,14 @@ function updateMenu() {
       --menu "Choose an Option" 0 0 0 \
       0 "Buildroot Branch: \Z1${ARCBRANCH}\Zn" \
       1 "Update Base Image \Z1(update)\Zn" \
+      1 "Upgrade Base Image \Z1(reflash)\Zn" \
       2>"${TMP_PATH}/resp"
     [ $? -ne 0 ] && break
     case "$(cat ${TMP_PATH}/resp)" in
       1)
         # Ask for Tag
         TAG=""
-        NEWVER="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-e/releases" | jq -r ".[].tag_name" | sort -rV | head -1)"
+        NEWVER="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-e/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
         OLDVER="$(cat ${PART1_PATH}/ARC-BASE-VERSION)"
         dialog --clear --backtitle "$(backtitle)" --title "Update Base Image" \
           --menu "Current: ${OLDVER} -> Which Version?" 7 50 0 \
@@ -843,6 +844,33 @@ function updateMenu() {
           [ -z "${TAG}" ] && return 1
         fi
         if updateLoader "${TAG}"; then
+          writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
+          BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
+          exec reboot && exit 0
+        fi
+        ;;
+      2)
+        # Ask for Tag
+        TAG=""
+        NEWVER="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-e/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
+        OLDVER="$(cat ${PART1_PATH}/ARC-BASE-VERSION)"
+        dialog --clear --backtitle "$(backtitle)" --title "Upgrade Base Image" \
+          --menu "Current: ${OLDVER} -> Which Version?" 7 50 0 \
+          1 "Latest ${NEWVER}" \
+          2 "Select Version" \
+        2>"${TMP_PATH}/opts"
+        [ $? -ne 0 ] && break
+        opts=$(cat ${TMP_PATH}/opts)
+        if [ ${opts} -eq 1 ]; then
+          TAG=""
+        elif [ ${opts} -eq 2 ]; then
+          dialog --backtitle "$(backtitle)" --title "Upgrade Base Image" \
+          --inputbox "Type the Version!" 0 0 \
+          2>"${TMP_PATH}/input"
+          TAG=$(cat "${TMP_PATH}/input")
+          [ -z "${TAG}" ] && return 1
+        fi
+        if upgradeLoader "${TAG}"; then
           writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
           BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
           exec reboot && exit 0
@@ -934,7 +962,7 @@ function sysinfo() {
     USERCMDLINEINFO="$(readConfigMap "cmdline" "${USER_CONFIG_FILE}")"
     USERSYNOINFO="$(readConfigMap "synoinfo" "${USER_CONFIG_FILE}")"
   fi
-  [ "${BUILDDONE}" == "true" ] && BUILDNUM="$(readConfigKey "buildnum" "${USER_CONFIG_FILE}")"
+  [ "${CONFDONE}" == "true" ] && BUILDNUM="$(readConfigKey "buildnum" "${USER_CONFIG_FILE}")"
   DIRECTBOOT="$(readConfigKey "directboot" "${USER_CONFIG_FILE}")"
   LKM="$(readConfigKey "lkm" "${USER_CONFIG_FILE}")"
   KERNELLOAD="$(readConfigKey "kernelload" "${USER_CONFIG_FILE}")"
