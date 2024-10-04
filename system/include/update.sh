@@ -162,7 +162,7 @@ function updateAddons() {
         sleep 5
         updateFailed
       fi
-    ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Update Addons" \
+    ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Addons" \
       --progressbox "Installing Addons..." 20 70
   else
     updateFaileddialog
@@ -205,7 +205,7 @@ function updatePatches() {
         sleep 5
         updateFailed
       fi
-    ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Update Patches" \
+    ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Patches" \
       --progressbox "Installing Patches..." 20 70
   else
     updateFaileddialog
@@ -248,7 +248,7 @@ function updateCustom() {
         sleep 5
         updateFailed
       fi
-    ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Update Custom" \
+    ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Custom" \
       --progressbox "Installing Custom..." 20 70
   else
     updateFaileddialog
@@ -307,7 +307,7 @@ function updateModules() {
         sleep 5
         updateFailed
       fi
-    ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Update Modules" \
+    ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Modules" \
       --progressbox "Installing Modules..." 20 70
   else
     updateFaileddialog
@@ -356,7 +356,7 @@ function updateConfigs() {
         sleep 5
         updateFailed
       fi
-    ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Update Configs" \
+    ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Configs" \
       --progressbox "Installing Configs..." 20 70
   else
     updateFaileddialog
@@ -403,7 +403,7 @@ function updateLKMs() {
         sleep 5
         updateFailed
       fi
-    ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Update LKMs" \
+    ) 2>&1 | dialog --backtitle "$(backtitle)" --title "LKMs" \
       --progressbox "Installing LKMs..." 20 70
   else
     updateFaileddialog
