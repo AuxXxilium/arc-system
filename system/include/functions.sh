@@ -539,7 +539,7 @@ function ntpCheck() {
     writeConfigKey "time.timezone" "${TIMEZONE}" "${USER_CONFIG_FILE}"
   fi
   if [ -n "${REGION}" ] && [ -n "${TIMEZONE}" ]; then
-    ln -sf "/usr/share/zoneinfo/right/${REGION}/${TIMEZONE}" /etc/localtime
+    ln -sf "/usr/share/zoneinfo/${REGION}/${TIMEZONE}" /etc/localtime
     /etc/init.d/S49ntpd restart >/dev/null 2>&1
   fi
   if [ -z "${LAYOUT}" ]; then
