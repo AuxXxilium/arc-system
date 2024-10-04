@@ -27,7 +27,6 @@ function editUserConfig() {
 ###############################################################################
 # Shows option to manage Addons
 function addonMenu() {
-  updateAddons
   addonSelection
   writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
   BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
@@ -85,7 +84,6 @@ function modulesMenu() {
   KVER="$(readConfigKey "platforms.${PLATFORM}.productvers.\"${PRODUCTVER}\".kver" "${P_FILE}")"
   # Modify KVER for Epyc7002
   [ "${PLATFORM}" == "epyc7002" ] && KVERP="${PRODUCTVER}-${KVER}" || KVERP="${KVER}"
-  updateModules
   # menu loop
   while true; do
     dialog --backtitle "$(backtitle)" --cancel-label "Exit" --menu "Choose an Option" 0 0 0 \
