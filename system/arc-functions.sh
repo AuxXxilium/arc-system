@@ -741,15 +741,16 @@ function backupMenu() {
             [ $? -ne 0 ] && updateFailed || true
             updatePatches
             [ $? -ne 0 ] && updateFailed || true
-            updateCustom
-            [ $? -ne 0 ] && updateFailed || true
+            KERNEL="$(readConfigKey "kernel" "${USER_CONFIG_FILE}")"
+            if [ "${KERNEL}" == "custom" ]; then
+              updateCustom
+              [ $? -ne 0 ] && updateFailed || true
+            fi
             writeConfigKey "modules" "{}" "${USER_CONFIG_FILE}"
             while read -r ID DESC; do
               writeConfigKey "modules.${ID}" "" "${USER_CONFIG_FILE}"
             done < <(getAllModules "${PLATFORM}" "${KVERP}")
           fi
-          CONFHASHFILE="$(sha256sum "${S_FILE}" | awk '{print $1}')"
-          writeConfigKey "arc.confhash" "${CONFHASHFILE}" "${USER_CONFIG_FILE}"
         fi
         ;;
       2)
@@ -1584,23 +1585,6 @@ function formatDisks() {
 }
 
 ###############################################################################
-# install opkg package manager
-function package() {
-  dialog --backtitle "$(backtitle)" --colors --title "Package" \
-    --yesno "This installs opkg Package Management,\nallowing you to install more Tools for use and debugging.\nDo you want to continue?" 0 0
-  [ $? -ne 0 ] && return
-  (
-    wget -O - http://bin.entware.net/x64-k3.2/installer/generic.sh | /bin/sh
-    opkg update
-    #opkg install python3 python3-pip
-  ) 2>&1 | dialog --backtitle "$(backtitle)" --colors --title "Package" \
-    --progressbox "Installing opkg ..." 20 100
-  dialog --backtitle "$(backtitle)" --colors --title "Package" \
-    --msgbox "Installation is complete.\nPlease reconnect to ssh/web,\nor execute 'source ~/.bashrc'" 0 0
-  return
-}
-
-###############################################################################
 # Clone Loader Disk
 function cloneLoader() {
   rm -f "${TMP_PATH}/opts" >/dev/null
@@ -1843,6 +1827,7 @@ function decryptMenu() {
         mkdir -p "${MODEL_CONFIG_PATH}"
         echo "Installing new Configs..."
         unzip -oq "${TMP_PATH}/configs.zip" -d "${MODEL_CONFIG_PATH}"
+        CONFHASHCHECK="$(cat "${S_FILE_CHECKSUM}")"
         rm -f "${TMP_PATH}/configs.zip"
         echo "Installation done!"
         sleep 2
@@ -1863,24 +1848,29 @@ function decryptMenu() {
     if openssl enc -in "${S_FILE_ENC}" -out "${S_FILE_ARC}" -d -aes-256-cbc -k "${ARCKEY}" 2>/dev/null; then
         dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
           --msgbox "Decrypt successful: You can use Arc Patch." 5 50
-        cp -f "${S_FILE_ARC}" "${S_FILE}"
+        CONFHASHARC="$(sha256sum "${S_FILE_ARC}" | awk '{print $1}')"
+        [ "${CONFHASHCHECK}" == "${CONFHASHARC}" ] && mv -f "${S_FILE_ARC}" "${S_FILE}" || mv -f "${S_FILE}.bak" "${S_FILE}"
+        CONFHASHFILE="$(sha256sum "${S_FILE}" | awk '{print $1}')"
     else
       while true; do
         cp -f "${S_FILE}" "${S_FILE}.bak"
         dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
-          --inputbox "Enter Decryption Key for ${CONFIGSVERSION} !\nKey is available in my Discord:\nhttps://discord.auxxxilium.tech" 9 50 2>"${TMP_PATH}/resp"
+          --inputbox "Enter Decryption Key for ${CONFIGSVERSION}!\nKey is available in my Discord:\nhttps://discord.auxxxilium.tech" 9 50 2>"${TMP_PATH}/resp"
         [ $? -ne 0 ] && break
         ARCKEY=$(cat "${TMP_PATH}/resp")
         if openssl enc -in "${S_FILE_ENC}" -out "${S_FILE_ARC}" -d -aes-256-cbc -k "${ARCKEY}" 2>/dev/null; then
           dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
             --msgbox "Decrypt successful: You can use Arc Patch." 5 50
-          cp -f "${S_FILE_ARC}" "${S_FILE}"
+          CONFHASHARC="$(sha256sum "${S_FILE_ARC}" | awk '{print $1}')"
+          [ "${CONFHASHCHECK}" == "${CONFHASHARC}" ] && mv -f "${S_FILE_ARC}" "${S_FILE}" || mv -f "${S_FILE}.bak" "${S_FILE}"
+          CONFHASHFILE="$(sha256sum "${S_FILE}" | awk '{print $1}')"
           writeConfigKey "arc.key" "${ARCKEY}" "${USER_CONFIG_FILE}"
           ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
         else
-          cp -f "${S_FILE}.bak" "${S_FILE}"
           dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
             --msgbox "Decrypt failed: Wrong Key for this Version." 5 50
+          mv -f "${S_FILE}.bak" "${S_FILE}"
+          CONFHASHFILE="$(sha256sum "${S_FILE}" | awk '{print $1}')"
           writeConfigKey "arc.key" "" "${USER_CONFIG_FILE}"
           ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
         fi
@@ -1890,7 +1880,6 @@ function decryptMenu() {
       done
     fi
   fi
-  CONFHASHFILE="$(sha256sum "${S_FILE}" | awk '{print $1}')"
   writeConfigKey "arc.confhash" "${CONFHASHFILE}" "${USER_CONFIG_FILE}"
   writeConfigKey "arc.confdone" "false" "${USER_CONFIG_FILE}"
   CONFDONE="$(readConfigKey "arc.confdone" "${USER_CONFIG_FILE}")"
