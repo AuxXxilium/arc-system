@@ -729,11 +729,10 @@ function make() {
   updateLKMs
   updatePatches
   if [ ! -f "${ORI_ZIMAGE_FILE}" ] || [ ! -f "${ORI_RDGZ_FILE}" ]; then
-    # Cleanup
-    mkdir -p "${USER_UP_PATH}"
-    DSM_FILE="${USER_UP_PATH}/${PAT_HASH}.tar"
     PAT_URL="$(readConfigKey "paturl" "${USER_CONFIG_FILE}")"
     PAT_HASH="$(readConfigKey "pathash" "${USER_CONFIG_FILE}")"
+    mkdir -p "${USER_UP_PATH}"
+    DSM_FILE="${USER_UP_PATH}/${PAT_HASH}.tar"
     VALID="false"
     if [ ! -f "${DSM_FILE}" ]; then
       dialog --backtitle "$(backtitle)" --colors --title "DSM Version" \
