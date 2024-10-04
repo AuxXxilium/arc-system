@@ -883,7 +883,30 @@ function updateMenu() {
         fi
         ;;
       3)
-        arcUpdate
+        KERNEL="$(readConfigKey "kernel" "${USER_CONFIG_FILE}")"
+        FAILED="false"
+        # Automatic Update
+        updateAddons
+        [ $? -ne 0 ] && FAILED="true"
+        updateModules
+        [ $? -ne 0 ] && FAILED="true"
+        updateLKMs
+        [ $? -ne 0 ] && FAILED="true"
+        updatePatches
+        [ $? -ne 0 ] && FAILED="true"
+        if [ "${KERNEL}" == "custom" ]; then
+          updateCustom
+          [ $? -ne 0 ] && FAILED="true"
+        fi
+        if [ "${FAILED}" == "true" ]; then
+          dialog --backtitle "$(backtitle)" --title "Full-Update Loader" --aspect 18 \
+            --msgbox "Update failed!\nPlease try again later." 0 0
+        else
+          dialog --backtitle "$(backtitle)" --title "Full-Update Loader" --aspect 18 \
+            --msgbox "Update successful!\nPlease rebuild to apply the changes." 0 0
+          writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
+          BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
+        fi
         ;;
       0)
         # Ask for Arc Branch
@@ -1852,9 +1875,8 @@ function decryptMenu() {
     if openssl enc -in "${S_FILE_ENC}" -out "${S_FILE_ARC}" -d -aes-256-cbc -k "${ARCKEY}" 2>/dev/null; then
         dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
           --msgbox "Decrypt successful: You can use Arc Patch." 5 50
-        CONFHASHARC="$(sha256sum "${S_FILE_ARC}" | awk '{print $1}')"
-        [ "${CONFHASHCHECK}" == "${CONFHASHARC}" ] && mv -f "${S_FILE_ARC}" "${S_FILE}" || mv -f "${S_FILE}.bak" "${S_FILE}"
-        CONFHASHFILE="$(sha256sum "${S_FILE}" | awk '{print $1}')"
+        CONFHASH="$(sha256sum "${S_FILE_ARC}" | awk '{print $1}')"
+        [ "${CONFHASHCHECK}" == "${CONFHASH}" ] && mv -f "${S_FILE_ARC}" "${S_FILE}" || mv -f "${S_FILE}.bak" "${S_FILE}"
     else
       while true; do
         cp -f "${S_FILE}" "${S_FILE}.bak"
@@ -1865,16 +1887,15 @@ function decryptMenu() {
         if openssl enc -in "${S_FILE_ENC}" -out "${S_FILE_ARC}" -d -aes-256-cbc -k "${ARCKEY}" 2>/dev/null; then
           dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
             --msgbox "Decrypt successful: You can use Arc Patch." 5 50
-          CONFHASHARC="$(sha256sum "${S_FILE_ARC}" | awk '{print $1}')"
-          [ "${CONFHASHCHECK}" == "${CONFHASHARC}" ] && mv -f "${S_FILE_ARC}" "${S_FILE}" || mv -f "${S_FILE}.bak" "${S_FILE}"
-          CONFHASHFILE="$(sha256sum "${S_FILE}" | awk '{print $1}')"
+          CONFHASH="$(sha256sum "${S_FILE_ARC}" | awk '{print $1}')"
+          [ "${CONFHASHCHECK}" == "${CONFHASH}" ] && mv -f "${S_FILE_ARC}" "${S_FILE}" || mv -f "${S_FILE}.bak" "${S_FILE}"
           writeConfigKey "arc.key" "${ARCKEY}" "${USER_CONFIG_FILE}"
           ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
         else
           dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
             --msgbox "Decrypt failed: Wrong Key for this Version." 5 50
           mv -f "${S_FILE}.bak" "${S_FILE}"
-          CONFHASHFILE="$(sha256sum "${S_FILE}" | awk '{print $1}')"
+          CONFHASH="$(sha256sum "${S_FILE}" | awk '{print $1}')"
           writeConfigKey "arc.key" "" "${USER_CONFIG_FILE}"
           ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
         fi
@@ -1884,7 +1905,7 @@ function decryptMenu() {
       done
     fi
   fi
-  writeConfigKey "arc.confhash" "${CONFHASHFILE}" "${USER_CONFIG_FILE}"
+  writeConfigKey "arc.confhash" "${CONFHASH}" "${USER_CONFIG_FILE}"
   writeConfigKey "arc.confdone" "false" "${USER_CONFIG_FILE}"
   CONFDONE="$(readConfigKey "arc.confdone" "${USER_CONFIG_FILE}")"
   writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
