@@ -825,7 +825,8 @@ function updateMenu() {
       --menu "Choose an Option" 0 0 0 \
       0 "Buildroot Branch: \Z1${ARCBRANCH}\Zn" \
       1 "Update Base Image \Z1(update)\Zn" \
-      1 "Upgrade Base Image \Z1(reflash)\Zn" \
+      2 "Upgrade Base Image \Z1(reflash)\Zn" \
+      3 "Inplace Update" \
       2>"${TMP_PATH}/resp"
     [ $? -ne 0 ] && break
     case "$(cat ${TMP_PATH}/resp)" in
@@ -882,6 +883,9 @@ function updateMenu() {
           BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
           exec reboot && exit 0
         fi
+        ;;
+      3)
+        arcUpdate
         ;;
       0)
         # Ask for Arc Branch
