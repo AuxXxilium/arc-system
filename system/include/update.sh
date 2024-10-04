@@ -54,7 +54,7 @@ function upgradeLoader () {
           updateFailed
         fi
       fi
-      echo "Upgrade done! -> Rebooting..."
+      echo "Successful! -> Rebooting..."
       deleteConfigKey "arc.confhash" "${USER_CONFIG_FILE}"
       sleep 2
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Upgrade Loader" \
@@ -105,8 +105,7 @@ function updateLoader() {
         mv -f "${PART3_PATH}/ARC-BASE-VERSION" "${PART1_PATH}/ARC-BASE-VERSION"
         mv -f "${PART3_PATH}/ARC-BRANCH" "${PART1_PATH}/ARC-BRANCH"
         rm -f "${TMP_PATH}/update.zip"
-        echo "Update done!"
-        sleep 2
+        echo "Successful!"
       else
         echo "Error downloading new Version!"
         sleep 5
@@ -157,15 +156,14 @@ function updateAddons() {
           tar -xaf "${F}" -C "${ADDONS_PATH}/${ADDON}"
           rm -f "${F}"
         done
-        echo "Update done!"
-        sleep 2
+        echo "Successful!"
       else
         echo "Error downloading new Version!"
         sleep 5
         updateFailed
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Update Addons" \
-      --progressbox "Updating Addons..." 20 70
+      --progressbox "Installing Addons..." 20 70
   else
     updateFaileddialog
   fi
@@ -201,15 +199,14 @@ function updatePatches() {
         echo "Installing new Patches..."
         unzip -oq "${TMP_PATH}/patches.zip" -d "${PATCH_PATH}"
         rm -f "${TMP_PATH}/patches.zip"
-        echo "Update done!"
-        sleep 2
+        echo "Successful!"
       else
         echo "Error downloading new Version!"
         sleep 5
         updateFailed
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Update Patches" \
-      --progressbox "Updating Patches..." 20 70
+      --progressbox "Installing Patches..." 20 70
   else
     updateFaileddialog
   fi
@@ -245,15 +242,14 @@ function updateCustom() {
         echo "Installing new Custom Kernel..."
         unzip -oq "${TMP_PATH}/custom.zip" -d "${CUSTOM_PATH}"
         rm -f "${TMP_PATH}/custom.zip"
-        echo "Update done!"
-        sleep 2
+        echo "Successful!"
       else
         echo "Error downloading new Version!"
         sleep 5
         updateFailed
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Update Custom" \
-      --progressbox "Updating Custom..." 20 70
+      --progressbox "Installing Custom..." 20 70
   else
     updateFaileddialog
   fi
@@ -278,37 +274,41 @@ function updateModules() {
   done
   if [ -n "${TAG}" ]; then
     (
+      rm -rf "${MODULES_PATH}"
+      mkdir -p "${MODULES_PATH}"
       # Download update file
       local URL="https://github.com/AuxXxilium/arc-modules/releases/download/${TAG}/${PLATFORM}-${KVERP}.modules"
-      echo "Downloading ${TAG}"
-      rm -f "${TMP_PATH}/*.modules"
-      curl -#kL "${URL}" -o "${TMP_PATH}/${PLATFORM}-${KVERP}.modules" 2>&1 | while IFS= read -r -n1 char; do
+      echo "Downloading Modules ${TAG}"
+      curl -#kL "${URL}" -o "${MODULES_PATH}/${PLATFORM}-${KVERP}.modules" 2>&1 | while IFS= read -r -n1 char; do
         [[ $char =~ [0-9] ]] && keep=1 ;
         [[ $char == % ]] && echo "$progress%" && progress="" && keep=0 ;
         [[ $keep == 1 ]] && progress="$progress$char" ;
       done
-      if [ -f "${TMP_PATH}/${PLATFORM}-${KVERP}.modules" ]; then
-        rm -rf "${MODULES_PATH}"
-        mkdir -p "${MODULES_PATH}"
-        echo "Installing new Modules..."
-        cp -f "${TMP_PATH}/${PLATFORM}-${KVERP}.modules" "${MODULES_PATH}/${PLATFORM}-${KVERP}.modules"
+      echo "Downloading Firmware ${TAG}"
+      local URL="https://github.com/AuxXxilium/arc-modules/releases/download/${TAG}/firmware.modules"
+      curl -#kL "${URL}" -o "${MODULES_PATH}/firmware.modules" 2>&1 | while IFS= read -r -n1 char; do
+        [[ $char =~ [0-9] ]] && keep=1 ;
+        [[ $char == % ]] && echo "$progress%" && progress="" && keep=0 ;
+        [[ $keep == 1 ]] && progress="$progress$char" ;
+      done
+      if [ -f "${MODULES_PATH}/${PLATFORM}-${KVERP}.modules" ] && [ -f "${MODULES_PATH}/firmware.modules" ]; then
         # Rebuild modules if model/build is selected
         if [ -n "${PLATFORM}" ] && [ -n "${KVERP}" ]; then
+          echo "Installing Modules..."
           writeConfigKey "modules" "{}" "${USER_CONFIG_FILE}"
           echo "Rebuilding Modules..."
           while read -r ID DESC; do
             writeConfigKey "modules.${ID}" "" "${USER_CONFIG_FILE}"
           done < <(getAllModules "${PLATFORM}" "${KVERP}")
         fi
-        echo "Update done!"
-        sleep 2
+        echo "Successful!"
       else
         echo "Error downloading new Version!"
         sleep 5
         updateFailed
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Update Modules" \
-      --progressbox "Updating Modules..." 20 70
+      --progressbox "Installing Modules..." 20 70
   else
     updateFaileddialog
   fi
@@ -346,21 +346,18 @@ function updateConfigs() {
       if [ -f "${TMP_PATH}/configs.zip" ]; then
         mkdir -p "${MODEL_CONFIG_PATH}"
         echo "Installing new Configs..."
-        [ -n "${ARCKEY}" ] && cp -f "${S_FILE}" "${TMP_PATH}/serials.yml"
         unzip -oq "${TMP_PATH}/configs.zip" -d "${MODEL_CONFIG_PATH}"
         rm -f "${TMP_PATH}/configs.zip"
-        [ -n "${ARCKEY}" ] && cp -f "${TMP_PATH}/serials.yml" "${S_FILE}"
         CONFHASH="$(sha256sum "${S_FILE}" | awk '{print $1}')"
         writeConfigKey "arc.confhash" "${CONFHASH}" "${USER_CONFIG_FILE}"
-        echo "Update done!"
-        sleep 2
+        echo "Successful!"
       else
         echo "Error downloading new Version!"
         sleep 5
         updateFailed
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Update Configs" \
-      --progressbox "Updating Configs..." 20 70
+      --progressbox "Installing Configs..." 20 70
   else
     updateFaileddialog
   fi
@@ -400,15 +397,14 @@ function updateLKMs() {
         echo "Installing new LKMs..."
         unzip -oq "${TMP_PATH}/rp-lkms.zip" -d "${LKMS_PATH}"
         rm -f "${TMP_PATH}/rp-lkms.zip"
-        echo "Update done!"
-        sleep 2
+        echo "Successful!"
       else
         echo "Error downloading new Version!"
         sleep 5
         updateFailed
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Update LKMs" \
-      --progressbox "Updating LKMs..." 20 70
+      --progressbox "Installing LKMs..." 20 70
   else
     updateFaileddialog
   fi
@@ -420,12 +416,12 @@ function updateLKMs() {
 function updateFailed() {
   local MODE="$(readConfigKey "arc.mode" "${USER_CONFIG_FILE}")"
   if [ "${ARCMODE}" == "automated" ]; then
-    echo "Update failed!"
+    echo "Installation failed!"
     sleep 5
     exec reboot
     exit 1
   else
-    echo "Update failed!"
+    echo "Installation failed!"
     return 1
   fi
 }
@@ -434,13 +430,13 @@ function updateFaileddialog() {
   local MODE="$(readConfigKey "arc.mode" "${USER_CONFIG_FILE}")"
   if [ "${ARCMODE}" == "automated" ]; then
     dialog --backtitle "$(backtitle)" --title "Update Failed" \
-      --infobox "Update failed!" 0 0
+      --infobox "Installation failed!" 0 0
     sleep 5
     exec reboot
     exit 1
   else
     dialog --backtitle "$(backtitle)" --title "Update Failed" \
-      --msgbox "Update failed!" 0 0
+      --msgbox "Installation failed!" 0 0
     return 1
   fi
 }

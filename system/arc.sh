@@ -84,6 +84,7 @@ function arcModel() {
   # Loop menu
   RESTRICT=1
   PS="$(readConfigEntriesArray "platforms" "${P_FILE}" | sort)"
+  MJ="$(python ${ARC_PATH}/include/functions.py getmodels -p "${PS[*]}")"
   if [[ -z "${MJ}" || "${MJ}" == "[]" ]]; then
     dialog --backtitle "$(backtitle)" --title "Model" --title "Model" \
       --msgbox "Failed to get models, please try again!" 3 50
@@ -493,6 +494,11 @@ function arcPatch() {
 # Arc Settings Section
 function arcSettings() {
   PLATFORM="$(readConfigKey "platform" "${USER_CONFIG_FILE}")"
+  MODEL="$(readConfigKey "model" "${USER_CONFIG_FILE}")"
+  PRODUCTVER="$(readConfigKey "productver" "${USER_CONFIG_FILE}")"
+  KVER="$(readConfigKey "platforms.${PLATFORM}.productvers.\"${PRODUCTVER}\".kver" "${P_FILE}")"
+  PAT_URL="$(readConfigKey "paturl" "${USER_CONFIG_FILE}")"
+  PAT_HASH="$(readConfigKey "pathash" "${USER_CONFIG_FILE}")"
   DT="$(readConfigKey "platforms.${PLATFORM}.dt" "${P_FILE}")"
   # Get Network Config for Loader
   dialog --backtitle "$(backtitle)" --colors --title "Network Config" \
@@ -576,7 +582,7 @@ function arcSettings() {
     deleteConfigKey "modules.mmc_block" "${USER_CONFIG_FILE}"
     deleteConfigKey "modules.mmc_core" "${USER_CONFIG_FILE}"
   fi
-  if [ -n "${PLATFORM}" ] && [ -n "${KVER}" ]; then
+  if [ -n "${PLATFORM}" ]&& [ -n "${MODEL}" ] && [ -n "${KVER}" ] && [ -n "${PAT_URL}" ]&& [ -n "${PAT_HASH}" ]; then
     # Config is done
     writeConfigKey "arc.confdone" "true" "${USER_CONFIG_FILE}"
     CONFDONE="$(readConfigKey "arc.confdone" "${USER_CONFIG_FILE}")"
@@ -602,7 +608,7 @@ function arcSettings() {
     fi
   else
     dialog --backtitle "$(backtitle)" --title "Config failed" \
-      --msgbox "ERROR: Config failed!\nExit." 5 40
+      --msgbox "ERROR: Config failed!\nExit." 6 40
     return 1
   fi
 }
@@ -713,49 +719,50 @@ function make() {
   # Max Memory for DSM
   RAMCONFIG="$((${RAMTOTAL} * 1024))"
   writeConfigKey "synoinfo.mem_max_mb" "${RAMCONFIG}" "${USER_CONFIG_FILE}"
-  # Update Patches
+  # Update Patches & LKMs
+  updateLKMs
   updatePatches
-  # Cleanup
-  mkdir -p "${USER_UP_PATH}"
-  DSM_FILE="${USER_UP_PATH}/${PAT_HASH}.tar"
-  PAT_URL="$(readConfigKey "paturl" "${USER_CONFIG_FILE}")"
-  PAT_HASH="$(readConfigKey "pathash" "${USER_CONFIG_FILE}")"
-  VALID="false"
-  if [ ! -f "${DSM_FILE}" ]; then
-    dialog --backtitle "$(backtitle)" --colors --title "DSM Version" \
-      --infobox "Try to get DSM Image..." 3 40
-    if [ ! -f "${ORI_ZIMAGE_FILE}" ] || [ ! -f "${ORI_RDGZ_FILE}" ]; then
-      # Get new Files
-      DSM_URL="https://raw.githubusercontent.com/AuxXxilium/arc-dsm/main/files/${MODEL/+/%2B}/${PRODUCTVER}/${PAT_HASH}.tar"
-      if curl -skL "${DSM_URL}" -o "${DSM_FILE}"; then
-        VALID="true"
+  if [ ! -f "${ORI_ZIMAGE_FILE}" ] || [ ! -f "${ORI_RDGZ_FILE}" ]; then
+    # Cleanup
+    mkdir -p "${USER_UP_PATH}"
+    DSM_FILE="${USER_UP_PATH}/${PAT_HASH}.tar"
+    PAT_URL="$(readConfigKey "paturl" "${USER_CONFIG_FILE}")"
+    PAT_HASH="$(readConfigKey "pathash" "${USER_CONFIG_FILE}")"
+    VALID="false"
+    if [ ! -f "${DSM_FILE}" ]; then
+      dialog --backtitle "$(backtitle)" --colors --title "DSM Version" \
+        --infobox "Try to get DSM Image..." 3 40
+      if [ ! -f "${ORI_ZIMAGE_FILE}" ] || [ ! -f "${ORI_RDGZ_FILE}" ]; then
+        # Get new Files
+        DSM_URL="https://raw.githubusercontent.com/AuxXxilium/arc-dsm/main/files/${MODEL/+/%2B}/${PRODUCTVER}/${PAT_HASH}.tar"
+        if curl -skL "${DSM_URL}" -o "${DSM_FILE}"; then
+          VALID="true"
+        fi
+      fi
+    elif [ -f "${DSM_FILE}" ]; then
+      VALID="true"
+    fi
+    mkdir -p "${UNTAR_PAT_PATH}"
+    if [ -f "${DSM_FILE}" ] && [ "${VALID}" == "true" ]; then
+      tar -xf "${DSM_FILE}" -C "${UNTAR_PAT_PATH}" 2>/dev/null
+      VALID="true"
+    else
+      dialog --backtitle "$(backtitle)" --title "DSM Extraction" --aspect 18 \
+        --infobox "DSM Extraction failed!\nExit." 4 40
+      VALID="false"
+      sleep 5
+    fi
+    # Copy DSM Files to Locations
+    if [ "${VALID}" == "true" ]; then
+      if [ ! -f "${ORI_ZIMAGE_FILE}" ] || [ ! -f "${ORI_RDGZ_FILE}" ]; then
+        dialog --backtitle "$(backtitle)" --title "DSM Extraction" --aspect 18 \
+          --infobox "Copying DSM Files..." 3 40
+        copyDSMFiles "${UNTAR_PAT_PATH}" 2>/dev/null
       fi
     fi
-  elif [ -f "${DSM_FILE}" ]; then
-    VALID="true"
+    # Cleanup
+    [ -d "${UNTAR_PAT_PATH}" ] && rm -rf "${UNTAR_PAT_PATH}"
   fi
-  # Cleanup
-  [ -d "${UNTAR_PAT_PATH}" ] && rm -rf "${UNTAR_PAT_PATH}"
-  mkdir -p "${UNTAR_PAT_PATH}"
-  if [ -f "${DSM_FILE}" ] && [ "${VALID}" == "true" ]; then
-    tar -xf "${DSM_FILE}" -C "${UNTAR_PAT_PATH}" 2>/dev/null
-    VALID="true"
-  else
-    dialog --backtitle "$(backtitle)" --title "DSM Extraction" --aspect 18 \
-      --infobox "DSM Extraction failed!\nExit." 4 40
-    VALID="false"
-    sleep 5
-  fi
-  # Copy DSM Files to Locations
-  if [ "${VALID}" == "true" ]; then
-    if [ ! -f "${ORI_ZIMAGE_FILE}" ] || [ ! -f "${ORI_RDGZ_FILE}" ]; then
-      dialog --backtitle "$(backtitle)" --title "DSM Extraction" --aspect 18 \
-        --infobox "Copying DSM Files..." 3 40
-      copyDSMFiles "${UNTAR_PAT_PATH}" 2>/dev/null
-    fi
-  fi
-  # Cleanup
-  [ -d "${UNTAR_PAT_PATH}" ] && rm -rf "${UNTAR_PAT_PATH}"
   if [ -f "${ORI_ZIMAGE_FILE}" ] && [ -f "${ORI_RDGZ_FILE}" ] && [ "${CONFDONE}" == "true" ]; then
     (
       livepatch

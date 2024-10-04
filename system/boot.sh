@@ -60,9 +60,6 @@ LKM="$(readConfigKey "lkm" "${USER_CONFIG_FILE}")"
 CPU="$(echo $(cat /proc/cpuinfo 2>/dev/null | grep 'model name' | uniq | awk -F':' '{print $2}'))"
 RAMTOTAL="$(awk '/MemTotal:/ {printf "%.0f\n", $2 / 1024 / 1024 + 0.5}' /proc/meminfo 2>/dev/null)"
 VENDOR="$(dmesg 2>/dev/null | grep -i "DMI:" | sed 's/\[.*\] DMI: //i')"
-KEYMAP="$(readConfigKey "keymap" "${USER_CONFIG_FILE}")"
-REGION="$(readConfigKey "time.region" "${USER_CONFIG_FILE}")"
-TIMEZONE="$(readConfigKey "time.timezone" "${USER_CONFIG_FILE}")"
 
 echo -e "\033[1;37mDSM:\033[0m"
 echo -e "Model: \033[1;37m${MODELID:-${MODEL}}\033[0m"
@@ -74,10 +71,6 @@ echo -e "\033[1;37mSystem:\033[0m"
 echo -e "Vendor: \033[1;37m${VENDOR}\033[0m"
 echo -e "CPU: \033[1;37m${CPU}\033[0m"
 echo -e "Memory: \033[1;37m${RAMTOTAL}GB\033[0m"
-echo
-echo -e "\033[1;37mLocation:\033[0m"
-echo -e "Keymap: \033[1;37m${KEYMAP}\033[0m"
-echo -e "Timezone: \033[1;37m${REGION}/${TIMEZONE}\033[0m"
 echo
 
 if ! readConfigMap "addons" "${USER_CONFIG_FILE}" | grep -q nvmesystem; then
@@ -305,9 +298,9 @@ elif [ "${DIRECTBOOT}" == "false" ]; then
 
   for T in $(busybox w 2>/dev/null | grep -v 'TTY' | awk '{print $2}'); do
     if [ -n "${IPCON}" ]; then
-      [ -w "/dev/${T}" ] && echo -e "\n\033[1;37mThis interface will not be operational. Wait a few minutes.\033[0m\nUse \033[1;34mhttp://${IPCON}:5000\033[0m or try \033[1;34mhttp://find.synology.com/ \033[0mto find DSM and proceed.\n" >"/dev/${T}" 2>/dev/null || true
+      [ -w "/dev/${T}" ] && echo -e "Use \033[1;34mhttp://${IPCON}:5000\033[0m or try \033[1;34mhttp://find.synology.com/ \033[0mto find DSM and proceed.\n\033[1;37mThis interface will not be operational. Wait a few minutes.\033[0m\n" >"/dev/${T}" 2>/dev/null || true
     else
-      [ -w "/dev/${T}" ] && echo -e "\n\033[1;37mThis interface will not be operational. Wait a few minutes.\nNo IP found. \033[0m\nTry \033[1;34mhttp://find.synology.com/ \033[0mto find DSM and proceed.\n" >"/dev/${T}" 2>/dev/null || true
+      [ -w "/dev/${T}" ] && echo -e "Try \033[1;34mhttp://find.synology.com/ \033[0mto find DSM and proceed.\n\033[1;37mThis interface will not be operational. Wait a few minutes.\nNo IP found. \033[0m\n" >"/dev/${T}" 2>/dev/null || true
     fi
   done
 

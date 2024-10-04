@@ -977,11 +977,6 @@ function sysinfo() {
   HARDDRIVES="$(readConfigKey "device.harddrives" "${USER_CONFIG_FILE}")"
   DRIVES="$(readConfigKey "device.drives" "${USER_CONFIG_FILE}")"
   ARC_BASE_VERSION="$(cat ${PART1_PATH}/ARC-BASE-VERSION)"
-  MODULESVERSION="$(cat "${MODULES_PATH}/VERSION")"
-  ADDONSVERSION="$(cat "${ADDONS_PATH}/VERSION")"
-  LKMVERSION="$(cat "${LKMS_PATH}/VERSION")"
-  CONFIGSVERSION="$(cat "${MODEL_CONFIG_PATH}/VERSION")"
-  PATCHESVERSION="$(cat "${PATCH_PATH}/VERSION")"
   TIMEOUT=5
   TEXT=""
   # Print System Informations
@@ -1044,7 +1039,6 @@ function sysinfo() {
   TEXT+="\n\Z4> Arc: ${ARC_VERSION}\Zn"
   TEXT+="\n  Base: \Zb${ARC_BASE_VERSION}\Zn"
   TEXT+="\n  Branch: \Zb${ARCBRANCH}\Zn"
-  TEXT+="\n  Subversion: \ZbAddons ${ADDONSVERSION} | Configs ${CONFIGSVERSION} | LKM ${LKMVERSION} | Modules ${MODULESVERSION} | Patches ${PATCHESVERSION}\Zn"
   TEXT+="\n  Config | Build: \Zb${CONFDONE} | ${BUILDDONE}\Zn"
   TEXT+="\n  Config Version: \Zb${CONFIGVER}\Zn"
   if [ "${CONFDONE}" == "true" ]; then
@@ -1865,28 +1859,36 @@ function decryptMenu() {
   fi
   if [ -f "${S_FILE_ENC}" ]; then
     CONFIGSVERSION="$(cat "${MODEL_CONFIG_PATH}/VERSION")"
-    while true; do
-      cp -f "${S_FILE}" "${S_FILE}.bak"
-      dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
-        --inputbox "Enter Decryption Key for ${CONFIGSVERSION} !\nKey is available in my Discord:\nhttps://discord.auxxxilium.tech" 9 50 2>"${TMP_PATH}/resp"
-      [ $? -ne 0 ] && break
-      KEY=$(cat "${TMP_PATH}/resp")
-      if openssl enc -in "${S_FILE_ENC}" -out "${S_FILE_ARC}" -d -aes-256-cbc -k "${KEY}" 2>/dev/null; then
+    ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
+    if openssl enc -in "${S_FILE_ENC}" -out "${S_FILE_ARC}" -d -aes-256-cbc -k "${ARCKEY}" 2>/dev/null; then
         dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
           --msgbox "Decrypt successful: You can use Arc Patch." 5 50
         cp -f "${S_FILE_ARC}" "${S_FILE}"
-        writeConfigKey "arc.key" "${KEY}" "${USER_CONFIG_FILE}"
-      else
-        cp -f "${S_FILE}.bak" "${S_FILE}"
+    else
+      while true; do
+        cp -f "${S_FILE}" "${S_FILE}.bak"
         dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
-          --msgbox "Decrypt failed: Wrong Key for this Version." 5 50
-        writeConfigKey "arc.key" "" "${USER_CONFIG_FILE}"
-      fi
-      ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
-      if [ -n "${ARCKEY}" ]; then
-        break
-      fi
-    done
+          --inputbox "Enter Decryption Key for ${CONFIGSVERSION} !\nKey is available in my Discord:\nhttps://discord.auxxxilium.tech" 9 50 2>"${TMP_PATH}/resp"
+        [ $? -ne 0 ] && break
+        ARCKEY=$(cat "${TMP_PATH}/resp")
+        if openssl enc -in "${S_FILE_ENC}" -out "${S_FILE_ARC}" -d -aes-256-cbc -k "${ARCKEY}" 2>/dev/null; then
+          dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
+            --msgbox "Decrypt successful: You can use Arc Patch." 5 50
+          cp -f "${S_FILE_ARC}" "${S_FILE}"
+          writeConfigKey "arc.key" "${KEY}" "${USER_CONFIG_FILE}"
+          ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
+        else
+          cp -f "${S_FILE}.bak" "${S_FILE}"
+          dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
+            --msgbox "Decrypt failed: Wrong Key for this Version." 5 50
+          writeConfigKey "arc.key" "" "${USER_CONFIG_FILE}"
+          ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
+        fi
+        if [ -n "${ARCKEY}" ]; then
+          break
+        fi
+      done
+    fi
   fi
   CONFHASHFILE="$(sha256sum "${S_FILE}" | awk '{print $1}')"
   writeConfigKey "arc.confhash" "${CONFHASHFILE}" "${USER_CONFIG_FILE}"
@@ -1894,11 +1896,7 @@ function decryptMenu() {
   CONFDONE="$(readConfigKey "arc.confdone" "${USER_CONFIG_FILE}")"
   writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
   BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
-  if [ -n "${ARCKEY}" ]; then
-    return 0
-  else
-    return 1
-  fi
+  return 0
 }
 
 ###############################################################################
