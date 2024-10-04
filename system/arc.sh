@@ -735,7 +735,7 @@ function make() {
     VALID="false"
     if [ ! -f "${DSM_FILE}" ]; then
       dialog --backtitle "$(backtitle)" --colors --title "DSM Version" \
-        --infobox "Try to get DSM Image..." 3 40
+        --infobox "Downloading DSM Base..." 3 40
       if [ ! -f "${ORI_ZIMAGE_FILE}" ] || [ ! -f "${ORI_RDGZ_FILE}" ]; then
         # Get new Files
         DSM_URL="https://raw.githubusercontent.com/AuxXxilium/arc-dsm/main/files/${MODEL/+/%2B}/${PRODUCTVER}/${PAT_HASH}.tar"
