@@ -82,8 +82,8 @@ function arcModel() {
     --infobox "Reading Models..." 3 25
   if [ ! -f "${S_FILE}" ]; then
     updateConfigs
-    CONFHASHFILE="$(sha256sum "${S_FILE}" | awk '{print $1}')"
-    writeConfigKey "arc.confhash" "${CONFHASHFILE}" "${USER_CONFIG_FILE}"
+    CONFHASH="$(sha256sum "${S_FILE}" | awk '{print $1}')"
+    writeConfigKey "arc.confhash" "${CONFHASH}" "${USER_CONFIG_FILE}"
   fi
   # Loop menu
   RESTRICT=1
@@ -920,6 +920,8 @@ else
     echo "= \"\Z4========== Main ==========\Zn \" "                                            >"${TMP_PATH}/menu"
     if [ -z "${ARCCONF}" ] && [ ! -f "${S_FILE_ENC}" ]; then
       echo "0 \"Enable Arc Patch\" "                                                          >>"${TMP_PATH}/menu"
+    else
+      echo "0 \"Update Arc Patch\" "                                                          >>"${TMP_PATH}/menu"
     fi
     echo "1 \"Choose Model \" "                                                               >>"${TMP_PATH}/menu"
     if [ "${CONFDONE}" == "true" ]; then
