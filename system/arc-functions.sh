@@ -1875,7 +1875,7 @@ function decryptMenu() {
           dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
             --msgbox "Decrypt successful: You can use Arc Patch." 5 50
           cp -f "${S_FILE_ARC}" "${S_FILE}"
-          writeConfigKey "arc.key" "${KEY}" "${USER_CONFIG_FILE}"
+          writeConfigKey "arc.key" "${ARCKEY}" "${USER_CONFIG_FILE}"
           ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
         else
           cp -f "${S_FILE}.bak" "${S_FILE}"
