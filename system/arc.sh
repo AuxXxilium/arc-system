@@ -773,6 +773,7 @@ function make() {
   if [ -f "${ORI_ZIMAGE_FILE}" ] && [ -f "${ORI_RDGZ_FILE}" ] && [ -f "${MOD_ZIMAGE_FILE}" ] && [ -f "${MOD_RDGZ_FILE}" ]; then
     MODELID=$(echo ${MODEL} | sed 's/d$/D/; s/rp$/RP/; s/rp+/RP+/')
     writeConfigKey "modelid" "${MODELID}" "${USER_CONFIG_FILE}"
+    writeConfigKey "arc.version" "${ARC_VERSION}" "${USER_CONFIG_FILE}"
     arcFinish
   else
     dialog --backtitle "$(backtitle)" --title "Build Loader" --aspect 18 \
