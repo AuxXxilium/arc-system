@@ -735,7 +735,7 @@ function make() {
     VALID="false"
     if [ ! -f "${DSM_FILE}" ]; then
       dialog --backtitle "$(backtitle)" --colors --title "DSM Version" \
-        --infobox "Try to get DSM Image..." 3 40
+        --infobox "Downloading DSM Base..." 3 40
       if [ ! -f "${ORI_ZIMAGE_FILE}" ] || [ ! -f "${ORI_RDGZ_FILE}" ]; then
         # Get new Files
         DSM_URL="https://raw.githubusercontent.com/AuxXxilium/arc-dsm/main/files/${MODEL/+/%2B}/${PRODUCTVER}/${PAT_HASH}.tar"
@@ -918,7 +918,7 @@ else
   [ "${BUILDDONE}" == "true" ] && NEXT="3" || [ "${CONFDONE}" == "true" ] && NEXT="2" || NEXT="1"
   while true; do
     echo "= \"\Z4========== Main ==========\Zn \" "                                            >"${TMP_PATH}/menu"
-    if [ -z "${ARCCONF}" ]; then
+    if [ -z "${ARCCONF}" ] && [ ! -f "${S_FILE_ENC}" ]; then
       echo "0 \"Enable Arc Patch\" "                                                          >>"${TMP_PATH}/menu"
     fi
     echo "1 \"Choose Model \" "                                                               >>"${TMP_PATH}/menu"

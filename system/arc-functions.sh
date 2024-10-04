@@ -1827,7 +1827,7 @@ function decryptMenu() {
         mkdir -p "${MODEL_CONFIG_PATH}"
         echo "Installing new Configs..."
         unzip -oq "${TMP_PATH}/configs.zip" -d "${MODEL_CONFIG_PATH}"
-        CONFHASHCHECK="$(cat "${S_FILE_CHECKSUM}")"
+        CONFHASHCHECK="$(cat "${S_FILE_CHECK}")"
         rm -f "${TMP_PATH}/configs.zip"
         echo "Installation done!"
         sleep 2
