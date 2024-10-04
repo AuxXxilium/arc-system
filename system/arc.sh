@@ -941,10 +941,10 @@ else
       fi
       if [ "${ARCOPTS}" == "true" ]; then
         echo "= \"\Z4======== Arc DSM ========\Zn \" "                                        >>"${TMP_PATH}/menu"
-        echo "b \"DSM Addons \" "                                                             >>"${TMP_PATH}/menu"
-        echo "d \"DSM Modules \" "                                                            >>"${TMP_PATH}/menu"
-        echo "e \"DSM Version \" "                                                            >>"${TMP_PATH}/menu"
-        echo "p \"DSM SN/Mac Options \" "                                                     >>"${TMP_PATH}/menu"
+        echo "b \"Addons \" "                                                                 >>"${TMP_PATH}/menu"
+        echo "d \"Modules \" "                                                                >>"${TMP_PATH}/menu"
+        echo "e \"Version \" "                                                                >>"${TMP_PATH}/menu"
+        echo "p \"SN/Mac Options \" "                                                         >>"${TMP_PATH}/menu"
         if [ "${DT}" == "false" ] && [ ${SATACONTROLLER} -gt 0 ]; then
           echo "S \"Sata PortMap \" "                                                         >>"${TMP_PATH}/menu"
         fi
@@ -982,13 +982,13 @@ else
       fi
       if [ "${DSMOPTS}" == "true" ]; then
         echo "= \"\Z4========== DSM ==========\Zn \" "                                        >>"${TMP_PATH}/menu"
-        echo "j \"DSM Cmdline \" "                                                            >>"${TMP_PATH}/menu"
-        echo "k \"DSM Synoinfo \" "                                                           >>"${TMP_PATH}/menu"
+        echo "j \"Cmdline \" "                                                                >>"${TMP_PATH}/menu"
+        echo "k \"Synoinfo \" "                                                               >>"${TMP_PATH}/menu"
         echo "l \"Edit User Config \" "                                                       >>"${TMP_PATH}/menu"
-        echo "s \"Allow DSM Downgrade \" "                                                    >>"${TMP_PATH}/menu"
+        echo "s \"Allow Downgrade \" "                                                        >>"${TMP_PATH}/menu"
         echo "t \"Change User Password \" "                                                   >>"${TMP_PATH}/menu"
         echo "N \"Add new User\" "                                                            >>"${TMP_PATH}/menu"
-        echo "J \"Reset DSM Network Config \" "                                               >>"${TMP_PATH}/menu"
+        echo "J \"Reset Network Config \" "                                                   >>"${TMP_PATH}/menu"
         if [ "${PLATFORM}" == "epyc7002" ]; then
           echo "K \"Kernel: \Z4${KERNEL}\Zn \" "                                              >>"${TMP_PATH}/menu"
         fi
@@ -998,6 +998,7 @@ else
           echo "h \"USB Mount: \Z4${USBMOUNT}\Zn \" "                                         >>"${TMP_PATH}/menu"
         fi
         echo "O \"Official Driver Priority: \Z4${ODP}\Zn \" "                                 >>"${TMP_PATH}/menu"
+        echo "B \"Grep DSM Config from Backup \" "                                            >>"${TMP_PATH}/menu"
       fi
     fi
     if [ "${LOADEROPTS}" == "true" ]; then
@@ -1013,17 +1014,16 @@ else
       echo "X \"Sata DOM: \Z4${SATADOM}\Zn \" "                                               >>"${TMP_PATH}/menu"
       echo "u \"LKM Version: \Z4${LKM}\Zn \" "                                                >>"${TMP_PATH}/menu"
       echo "c \"IPv6 Support: \Z4${IPV6}\Zn \" "                                              >>"${TMP_PATH}/menu"
-      echo "B \"Grep DSM Config from Backup \" "                                              >>"${TMP_PATH}/menu"
       echo "L \"Grep Logs from dbgutils \" "                                                  >>"${TMP_PATH}/menu"
       echo "w \"Reset Loader to Defaults \" "                                                 >>"${TMP_PATH}/menu"
       echo "C \"Clone Loader to another Disk \" "                                             >>"${TMP_PATH}/menu"
       echo "n \"Grub Bootloader Config \" "                                                   >>"${TMP_PATH}/menu"
-      echo "F \"\Z1Formate Disks \Zn \" "                                                     >>"${TMP_PATH}/menu"
       echo "y \"Choose a Keymap for Loader\" "                                                >>"${TMP_PATH}/menu"
+      echo "F \"\Z1Formate Disks \Zn \" "                                                     >>"${TMP_PATH}/menu"
     fi
     echo "= \"\Z4========== Misc ==========\Zn \" "                                           >>"${TMP_PATH}/menu"
-    echo "x \"Config Backup/Restore/Recovery \" "                                             >>"${TMP_PATH}/menu"
-    echo "z \"Loader Update Menu \" "                                                         >>"${TMP_PATH}/menu"
+    echo "x \"Backup/Restore/Recovery \" "                                                    >>"${TMP_PATH}/menu"
+    echo "z \"Update Menu \" "                                                                >>"${TMP_PATH}/menu"
     echo "I \"Power/Service Menu \" "                                                         >>"${TMP_PATH}/menu"
     echo "V \"Credits \" "                                                                    >>"${TMP_PATH}/menu"
 
