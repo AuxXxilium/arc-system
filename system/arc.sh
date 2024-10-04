@@ -13,6 +13,9 @@
 . ${ARC_PATH}/include/update.sh
 . ${ARC_PATH}/arc-functions.sh
 
+# Get Keymap and Timezone Config
+ntpCheck
+KEYMAP="$(readConfigKey "keymap" "${USER_CONFIG_FILE}")"
 # Check for System
 systemCheck
 ARCMODE="$(readConfigKey "arc.mode" "${USER_CONFIG_FILE}")"
@@ -54,9 +57,6 @@ ARCBRANCH="$(readConfigKey "arc.branch" "${USER_CONFIG_FILE}")"
 CONFDONE="$(readConfigKey "arc.confdone" "${USER_CONFIG_FILE}")"
 BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
 
-# Get Keymap and Timezone Config
-ntpCheck
-KEYMAP="$(readConfigKey "keymap" "${USER_CONFIG_FILE}")"
 # Call compatboot helper
 compatboot
 
@@ -370,7 +370,7 @@ function arcVersion() {
     ADDONS="$(readConfigKey "addons" "${USER_CONFIG_FILE}")"
     DEVICENIC="$(readConfigKey "device.nic" "${USER_CONFIG_FILE}")"
     ARCCONF="$(readConfigKey "${MODEL}.serial" "${S_FILE}")"
-    updateAddons
+    [ $(ls "${ADDONS_PATH}" | wc -l) -lt 2 ] && updateAddons
     if [ "${ADDONS}" == "{}" ]; then
       initConfigKey "addons.acpid" "" "${USER_CONFIG_FILE}"
       initConfigKey "addons.cpuinfo" "" "${USER_CONFIG_FILE}"
@@ -411,7 +411,7 @@ function arcVersion() {
       fi
     done < <(readConfigMap "addons" "${USER_CONFIG_FILE}")
     # Reset Modules
-    updateModules
+    [ $(ls "${MODULES_PATH}" | wc -l) -lt 2 ] && updateModules
     # Check for Only Version
     if [ "${ONLYVERSION}" == "true" ]; then
       writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
@@ -725,8 +725,8 @@ function make() {
   RAMCONFIG="$((${RAMTOTAL} * 1024))"
   writeConfigKey "synoinfo.mem_max_mb" "${RAMCONFIG}" "${USER_CONFIG_FILE}"
   # Update Patches & LKMs
-  updateLKMs
-  updatePatches
+  [ $(ls "${LKMS_PATH}" | wc -l) -lt 2 ] && updateLKMs
+  [ $(ls "${PATCH_PATH}" | wc -l) -lt 2 ] && updatePatches
   if [ ! -f "${ORI_ZIMAGE_FILE}" ] || [ ! -f "${ORI_RDGZ_FILE}" ]; then
     PAT_URL="$(readConfigKey "paturl" "${USER_CONFIG_FILE}")"
     PAT_HASH="$(readConfigKey "pathash" "${USER_CONFIG_FILE}")"

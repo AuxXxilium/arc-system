@@ -540,7 +540,7 @@ function ntpCheck() {
   fi
   if [ -n "${REGION}" ] && [ -n "${TIMEZONE}" ]; then
     ln -sf "/usr/share/zoneinfo/right/${REGION}/${TIMEZONE}" /etc/localtime
-    #hwclock --systohc
+    /etc/init.d/S49ntpd restart >/dev/null 2>&1
   fi
   if [ -z "${LAYOUT}" ]; then
     [ -n "${KEYMAP}" ] && KEYMAP="$(echo ${KEYMAP} | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]' | tr -d '[:punct:]' | tr -d '[:digit:]')"
@@ -583,21 +583,5 @@ function systemCheck () {
     CPUFREQ="true"
   else
     CPUFREQ="false"
-  fi
-  # Check for ARCKEY
-  ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
-  MODEL="$(readConfigKey "model" "${USER_CONFIG_FILE}")"
-  if [ -n "${MODEL}" ]; then
-    ARCCONF="$(readConfigKey "${MODEL}.serial" "${S_FILE}" 2>/dev/null)"
-  fi
-  if [ -z "${ARCCONF}" ] && [ -n "${ARCKEY}" ]; then
-    if openssl enc -in "${S_FILE_ENC}" -out "${S_FILE_ARC}" -d -aes-256-cbc -k "${ARCKEY}" 2>/dev/null; then
-      cp -f "${S_FILE_ARC}" "${S_FILE}"
-      writeConfigKey "arc.key" "${ARCKEY}" "${USER_CONFIG_FILE}"
-    else
-      [ -f "${S_FILE}.bak" ] && cp -f "${S_FILE}.bak" "${S_FILE}"
-      writeConfigKey "arc.key" "" "${USER_CONFIG_FILE}"
-      writeConfigKey "arc.patch" "false" "${USER_CONFIG_FILE}"
-    fi
   fi
 }
