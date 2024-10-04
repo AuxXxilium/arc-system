@@ -31,6 +31,7 @@ fi
 # Get Arc Data from Config
 ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
 ARCPATCH="$(readConfigKey "arc.patch" "${USER_CONFIG_FILE}")"
+ARCCONF="$(readConfigKey "${MODEL}.serial" "${S_FILE}")"
 IPV6="$(readConfigKey "arc.ipv6" "${USER_CONFIG_FILE}")"
 BOOTIPWAIT="$(readConfigKey "bootipwait" "${USER_CONFIG_FILE}")"
 DIRECTBOOT="$(readConfigKey "directboot" "${USER_CONFIG_FILE}")"
@@ -80,7 +81,11 @@ function backtitle() {
 function arcModel() {
   dialog --backtitle "$(backtitle)" --title "DSM Model" \
     --infobox "Reading Models..." 3 25
-  updateConfigs
+  if [ ! -f "${S_FILE}" ]; then
+    updateConfigs
+    CONFHASHFILE="$(sha256sum "${S_FILE}" | awk '{print $1}')"
+    writeConfigKey "arc.confhash" "${CONFHASHFILE}" "${USER_CONFIG_FILE}"
+  fi
   # Loop menu
   RESTRICT=1
   PS="$(readConfigEntriesArray "platforms" "${P_FILE}" | sort)"
@@ -436,8 +441,10 @@ function arcPatch() {
   ARCCONF="$(readConfigKey "${MODEL}.serial" "${S_FILE}")"
   # Check for Custom Build
   SN="$(readConfigKey "sn" "${USER_CONFIG_FILE}")"
+  CONFHASHFILE="$(sha256sum "${S_FILE}" | awk '{print $1}')"
+  CONFHASH="$(readConfigKey "arc.confhash" "${USER_CONFIG_FILE}")"
   if [ "${ARCMODE}" == "automated" ]; then
-    if [ -n "${ARCCONF}" ]; then
+    if [ -n "${ARCCONF}" ] && [ "${CONFHASH}" == "${CONFHASHFILE}" ]; then
       SN=$(generateSerial "${MODEL}" "true" | tr '[:lower:]' '[:upper:]')
       writeConfigKey "arc.patch" "true" "${USER_CONFIG_FILE}"
     else
@@ -455,15 +462,14 @@ function arcPatch() {
     resp=$(cat ${TMP_PATH}/resp)
     [ -z "${resp}" ] && return 1
     if [ ${resp} -eq 1 ]; then
-      decryptMenu
-      if [ $? -ne 0 ]; then
-        # Read Arc Patch from File
-        SN="$(generateSerial "${MODEL}" "false" | tr '[:lower:]' '[:upper:]')"
-        writeConfigKey "arc.patch" "false" "${USER_CONFIG_FILE}"
-      else
+      if [ -n "${ARCCONF}" ] && [ "${CONFHASH}" == "${CONFHASHFILE}" ]; then
         # Read Arc Patch from File
         SN="$(generateSerial "${MODEL}" "true" | tr '[:lower:]' '[:upper:]')"
         writeConfigKey "arc.patch" "true" "${USER_CONFIG_FILE}"
+      else
+        # Read Arc Patch from File
+        SN="$(generateSerial "${MODEL}" "false" | tr '[:lower:]' '[:upper:]')"
+        writeConfigKey "arc.patch" "false" "${USER_CONFIG_FILE}"
       fi
     elif [ ${resp} -eq 2 ]; then
       # Generate random Serial
@@ -914,6 +920,9 @@ else
   [ "${BUILDDONE}" == "true" ] && NEXT="3" || [ "${CONFDONE}" == "true" ] && NEXT="2" || NEXT="1"
   while true; do
     echo "= \"\Z4========== Main ==========\Zn \" "                                            >"${TMP_PATH}/menu"
+    if [ -z "${ARCCONF}" ]; then
+      echo "0 \"Enable Arc Patch\" "                                                          >>"${TMP_PATH}/menu"
+    fi
     echo "1 \"Choose Model \" "                                                               >>"${TMP_PATH}/menu"
     if [ "${CONFDONE}" == "true" ]; then
       echo "2 \"Build Loader \" "                                                             >>"${TMP_PATH}/menu"
@@ -1011,7 +1020,6 @@ else
       echo "C \"Clone Loader to another Disk \" "                                             >>"${TMP_PATH}/menu"
       echo "n \"Grub Bootloader Config \" "                                                   >>"${TMP_PATH}/menu"
       echo "F \"\Z1Formate Disks \Zn \" "                                                     >>"${TMP_PATH}/menu"
-      echo "G \"Install opkg Package Manager \" "                                             >>"${TMP_PATH}/menu"
       echo "y \"Choose a Keymap for Loader\" "                                                >>"${TMP_PATH}/menu"
     fi
     echo "= \"\Z4========== Misc ==========\Zn \" "                                           >>"${TMP_PATH}/menu"
@@ -1188,7 +1196,6 @@ else
       L) greplogs; NEXT="L" ;;
       C) cloneLoader; NEXT="C" ;;
       F) formatDisks; NEXT="F" ;;
-      G) package; NEXT="G" ;;
       # Misc Settings
       x) backupMenu; NEXT="x" ;;
       y) keymapMenu; NEXT="y" ;;
