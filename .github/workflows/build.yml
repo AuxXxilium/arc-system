@@ -76,6 +76,13 @@ jobs:
           echo "Version: ${VERSION}"
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
 
+          if [ -n "${VERSION}" ]; then
+            # Modify Source File
+            echo "${VERSION}" >VERSION
+            echo "${VERSION}" >files/p1/ARC-VERSION
+            sed 's/^ARC_VERSION=.*/ARC_VERSION="'${VERSION}'"/' -i system/include/consts.sh
+          fi
+
       # Zip image
       - name: Pack
         run: |
