@@ -1,8 +1,8 @@
 ###############################################################################
 # Permits user edit the user config
 function editUserConfig() {
-  OLDMODEL="${MODEL}"
-  OLDPRODUCTVER="${PRODUCTVER}"
+  OLDMODEL="$(readConfigKey "model" "${USER_CONFIG_FILE}")"
+  OLDPRODUCTVER="$(readConfigKey "productver" "${USER_CONFIG_FILE}")"
   while true; do
     dialog --backtitle "$(backtitle)" --title "Edit with caution" \
       --ok-label "Save" --editbox "${USER_CONFIG_FILE}" 0 0 2>"${TMP_PATH}/userconfig"
@@ -1008,8 +1008,6 @@ function sysinfo() {
   TEXT+="\n  CPU Scaling: \Zb${CPUFREQ}\Zn"
   TEXT+="\n  Secure Boot: \Zb${SECURE}\Zn"
   TEXT+="\n  Bootdisk: \Zb${LOADER_DISK}\Zn"
-  [ -n "${REGION}" ] && [ -n "${TIMEZONE}" ] && TEXT+="\n  Timezone: \Zb${REGION}/${TIMEZONE}\Zn"
-  TEXT+="\n  Time: \Zb$(date "+%F %H:%M:%S")\Zn"
   TEXT+="\n"
   TEXT+="\n\Z4> Network: ${ETHN} NIC\Zn\n"
   for ETH in ${ETHX}; do
