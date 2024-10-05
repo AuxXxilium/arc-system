@@ -145,7 +145,7 @@ function updateSystem() {
       if [ -f "${TMP_PATH}/system.zip" ]; then
         mkdir -p "${SYSTEM_PATH}"
         echo "Installing new System..."
-        unzip -oq "${TMP_PATH}/system.zip" -d "${PATCH_PATH}"
+        unzip -oq "${TMP_PATH}/system.zip" -d "${SYSTEM_PATH}"
         rm -f "${TMP_PATH}/system.zip"
         echo "Successful!"
       else
