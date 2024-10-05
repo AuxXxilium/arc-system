@@ -483,33 +483,6 @@ function livepatch() {
     fi
   fi
   if [ "${PVALID}" == "false" ]; then
-    # Load update functions
-    . ${ARC_PATH}/include/update.sh
-    # Update Patches
-    echo -e "Updating Patches..."
-    updatePatches
-    # Patch zImage
-    echo -n "Patching zImage"
-    if ${ARC_PATH}/zimage-patch.sh; then
-      echo -e " - successful!"
-      PVALID="true"
-    else
-      echo -e " - failed!"
-      PVALID="false"
-    fi
-    if [ "${PVALID}" == "true" ]; then
-      # Patch Ramdisk
-      echo -n "Patching Ramdisk"
-      if ${ARC_PATH}/ramdisk-patch.sh; then
-        echo -e " - successful!"
-        PVALID="true"
-      else
-        echo -e " - failed!"
-        PVALID="false"
-      fi
-    fi
-  fi
-  if [ "${PVALID}" == "false" ]; then
     echo
     echo -e "Patching DSM Files failed! Please stay patient for Update."
     sleep 5
