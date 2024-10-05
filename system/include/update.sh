@@ -143,7 +143,6 @@ function updateSystem() {
         [[ $keep == 1 ]] && progress="$progress$char" ;
       done
       if [ -f "${TMP_PATH}/system.zip" ]; then
-        rm -rf "${SYSTEM_PATH}"
         mkdir -p "${SYSTEM_PATH}"
         echo "Installing new System..."
         unzip -oq "${TMP_PATH}/system.zip" -d "${PATCH_PATH}"
