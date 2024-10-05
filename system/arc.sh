@@ -826,6 +826,8 @@ function arcUpdate() {
   BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
   FAILED="false"
   # Automatic Update
+  updateSystem
+  [ $? -ne 0 ] && FAILED="true"
   updateAddons
   [ $? -ne 0 ] && FAILED="true"
   updateModules
@@ -861,6 +863,8 @@ function arcUpdate() {
     writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
     BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
     sleep 3
+    clear
+    arc.sh
   fi
 }
 

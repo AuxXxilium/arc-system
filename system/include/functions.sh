@@ -539,7 +539,6 @@ function ntpCheck() {
   fi
   if [ -n "${REGION}" ] && [ -n "${TIMEZONE}" ]; then
     ln -sf "/usr/share/zoneinfo/${REGION}/${TIMEZONE}" /etc/localtime
-    /etc/init.d/S49ntpd restart >/dev/null 2>&1
   fi
   if [ -z "${LAYOUT}" ]; then
     [ -n "${KEYMAP}" ] && KEYMAP="$(echo ${KEYMAP} | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]' | tr -d '[:punct:]' | tr -d '[:digit:]')"
