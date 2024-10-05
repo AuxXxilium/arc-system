@@ -229,10 +229,11 @@ elif [ "${DIRECTBOOT}" == "false" ]; then
   [ -z "${BOOTIPWAIT}" ] && BOOTIPWAIT=30
   IPCON=""
   if [ "${ARCPATCH}" == "true" ]; then
-    echo -e "\033[1;34mUsing ${NIC} NIC for Arc Patch.\033[0m"
-    echo
+    echo -e "\033[1;34mDetected ${ETHN} NIC\033[0m | \033[1;34mUsing ${NIC} NIC for Arc Patch \033[0m | \033[1;37mWaiting for Connection:\033[0m"
+  else
+    echo -e "\033[1;34mDetected ${ETHN} NIC\033[0m | \033[1;37mWaiting for Connection:\033[0m"
   fi
-  echo -e "\033[1;34mDetected ${ETHN} NIC.\033[0m \033[1;37mWaiting for Connection:\033[0m"
+  echo
   sleep 3
   for ETH in ${ETHX}; do
     COUNT=0
