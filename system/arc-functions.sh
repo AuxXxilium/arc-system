@@ -1,8 +1,8 @@
 ###############################################################################
 # Permits user edit the user config
 function editUserConfig() {
-  OLDMODEL="${MODEL}"
-  OLDPRODUCTVER="${PRODUCTVER}"
+  OLDMODEL="$(readConfigKey "model" "${USER_CONFIG_FILE}")"
+  OLDPRODUCTVER="$(readConfigKey "productver" "${USER_CONFIG_FILE}")"
   while true; do
     dialog --backtitle "$(backtitle)" --title "Edit with caution" \
       --ok-label "Save" --editbox "${USER_CONFIG_FILE}" 0 0 2>"${TMP_PATH}/userconfig"
