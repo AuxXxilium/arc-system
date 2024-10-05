@@ -826,8 +826,8 @@ function arcUpdate() {
   BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
   FAILED="false"
   # Automatic Update
-  updateSystem
-  [ $? -ne 0 ] && FAILED="true"
+  #updateSystem
+  #[ $? -ne 0 ] && FAILED="true"
   updateAddons
   [ $? -ne 0 ] && FAILED="true"
   updateModules
