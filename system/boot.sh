@@ -250,7 +250,7 @@ elif [ "${DIRECTBOOT}" == "false" ]; then
         if [[ "${IP}" =~ ^169\.254\..* ]]; then
           echo -e "\r\033[1;37m${DRIVER} (${SPEED}):\033[0m LINK LOCAL (No DHCP server found.)"
         else
-          echo -e "\r\033[1;37m${DRIVER} (${SPEED}):\033[0m Access \033[1;34mhttp://${IP}:5000\033[0m to connect to DSM via web."
+          echo -e "\r\033[1;37m${DRIVER} (${SPEED}):\033[0m \033[1;34m${IP}"
           [ -z "${IPCON}" ] && IPCON="${IP}"
         fi
         break
@@ -299,13 +299,13 @@ elif [ "${DIRECTBOOT}" == "false" ]; then
 
   for T in $(busybox w 2>/dev/null | grep -v 'TTY' | awk '{print $2}'); do
     if [ -n "${IPCON}" ]; then
-      [ -w "/dev/${T}" ] && echo -e "Use \033[1;34mhttp://${IPCON}:5000\033[0m or try \033[1;34mhttp://find.synology.com/ \033[0mto find DSM and proceed.\n\n\033[1;37mThis interface will not be operational. Wait a few minutes.\033[0m\n" >"/dev/${T}" 2>/dev/null || true
+      [ -w "/dev/${T}" ] && echo -e "Use \033[1;34mhttp://${IPCON}:5000\033[0m or try \033[1;34mhttp://find.synology.com/ \033[0mto find DSM and proceed.\n\n\033[1;37mThis interface will not be operational. Wait a few minutes.\033[0m" >"/dev/${T}" 2>/dev/null || true
     else
-      [ -w "/dev/${T}" ] && echo -e "Try \033[1;34mhttp://find.synology.com/ \033[0mto find DSM and proceed.\n\n\033[1;37mThis interface will not be operational. Wait a few minutes.\nNo IP found. \033[0m\n" >"/dev/${T}" 2>/dev/null || true
+      [ -w "/dev/${T}" ] && echo -e "Try \033[1;34mhttp://find.synology.com/ \033[0mto find DSM and proceed.\n\n\033[1;37mThis interface will not be operational. Wait a few minutes.\nNo IP found. \033[0m" >"/dev/${T}" 2>/dev/null || true
     fi
   done
 
-  echo -e "\033[1;37mLoading DSM Kernel and Ramdisk...\033[0m"
+  echo -e "\033[1;37mLoading DSM Kernel...\033[0m"
   # Executes DSM kernel via KEXEC
   KEXECARGS="-a"
   if [ $(echo "${KVER:-4}" | cut -d'.' -f1) -lt 4 ] && [ ${EFI} -eq 1 ]; then
