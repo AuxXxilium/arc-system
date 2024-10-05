@@ -528,7 +528,6 @@ function livepatch() {
 function ntpCheck() {
   LAYOUT="$(readConfigKey "layout" "${USER_CONFIG_FILE}")"
   KEYMAP="$(readConfigKey "keymap" "${USER_CONFIG_FILE}")"
-  # Timezone
   REGION="$(readConfigKey "time.region" "${USER_CONFIG_FILE}")"
   TIMEZONE="$(readConfigKey "time.timezone" "${USER_CONFIG_FILE}")"
   if [ -z "${REGION}" ] || [ -z "${TIMEZONE}" ]; then
