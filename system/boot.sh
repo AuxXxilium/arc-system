@@ -298,9 +298,9 @@ elif [ "${DIRECTBOOT}" == "false" ]; then
 
   for T in $(busybox w 2>/dev/null | grep -v 'TTY' | awk '{print $2}'); do
     if [ -n "${IPCON}" ]; then
-      [ -w "/dev/${T}" ] && echo -e "Use \033[1;34mhttp://${IPCON}:5000\033[0m or try \033[1;34mhttp://find.synology.com/ \033[0mto find DSM and proceed.\n\033[1;37mThis interface will not be operational. Wait a few minutes.\033[0m\n" >"/dev/${T}" 2>/dev/null || true
+      [ -w "/dev/${T}" ] && echo -e "Use \033[1;34mhttp://${IPCON}:5000\033[0m or try \033[1;34mhttp://find.synology.com/ \033[0mto find DSM and proceed.\n\n\033[1;37mThis interface will not be operational. Wait a few minutes.\033[0m\n" >"/dev/${T}" 2>/dev/null || true
     else
-      [ -w "/dev/${T}" ] && echo -e "Try \033[1;34mhttp://find.synology.com/ \033[0mto find DSM and proceed.\n\033[1;37mThis interface will not be operational. Wait a few minutes.\nNo IP found. \033[0m\n" >"/dev/${T}" 2>/dev/null || true
+      [ -w "/dev/${T}" ] && echo -e "Try \033[1;34mhttp://find.synology.com/ \033[0mto find DSM and proceed.\n\n\033[1;37mThis interface will not be operational. Wait a few minutes.\nNo IP found. \033[0m\n" >"/dev/${T}" 2>/dev/null || true
     fi
   done
 

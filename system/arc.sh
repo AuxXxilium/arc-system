@@ -839,24 +839,24 @@ function arcUpdate() {
     [ $? -ne 0 ] && FAILED="true"
   fi
   if [ "${FAILED}" == "true" ] && [ "${UPDATEMODE}" == "true" ]; then
-    dialog --backtitle "$(backtitle)" --title "Full-Update Loader" --aspect 18 \
+    dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
       --infobox "Update failed!\nTry again later." 0 0
     sleep 3
     exec reboot
   elif [ "${FAILED}" == "true" ]; then
-    dialog --backtitle "$(backtitle)" --title "Full-Update Loader" --aspect 18 \
+    dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
       --infobox "Update failed!\nTry again later." 0 0
     sleep 3
   elif [ "${FAILED}" == "false" ] && [ "${UPDATEMODE}" == "true" ]; then
     # Ask for Boot
-    dialog --backtitle "$(backtitle)" --title "Full-Update Loader" --aspect 18 \
+    dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
       --infobox "Update successful! -> Building now..." 0 0
     sleep 3
     writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
     BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
     make
   elif [ "${FAILED}" == "false" ]; then
-    dialog --backtitle "$(backtitle)" --title "Full-Update Loader" --aspect 18 \
+    dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
       --infobox "Update successful!" 0 0
     writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
     BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
@@ -915,8 +915,6 @@ else
     echo "= \"\Z4========== Main ==========\Zn \" "                                            >"${TMP_PATH}/menu"
     if [ -z "${ARCCONF}" ] && [ ! -f "${S_FILE_ENC}" ]; then
       echo "0 \"Enable Arc Patch\" "                                                          >>"${TMP_PATH}/menu"
-    else
-      echo "0 \"Update Arc Patch\" "                                                          >>"${TMP_PATH}/menu"
     fi
     echo "1 \"Choose Model \" "                                                               >>"${TMP_PATH}/menu"
     if [ "${CONFDONE}" == "true" ]; then

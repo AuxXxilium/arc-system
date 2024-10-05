@@ -824,7 +824,8 @@ function updateMenu() {
       0 "Buildroot Branch: \Z1${ARCBRANCH}\Zn" \
       1 "Update Base Image \Z1(update)\Zn" \
       2 "Upgrade Base Image \Z1(reflash)\Zn" \
-      3 "Inplace Update" \
+      3 "Inplace-Update Dependencies" \
+      4 "Update Arc Patch" \
       2>"${TMP_PATH}/resp"
     [ $? -ne 0 ] && break
     case "$(cat ${TMP_PATH}/resp)" in
@@ -884,6 +885,9 @@ function updateMenu() {
         ;;
       3)
         arcUpdate
+        ;;
+      4)
+        decryptMenu
         ;;
       0)
         # Ask for Arc Branch
