@@ -1829,9 +1829,9 @@ function decryptMenu() {
       if [ -f "${TMP_PATH}/configs.zip" ]; then
         echo "Download successful!"
         mkdir -p "${MODEL_CONFIG_PATH}"
+        cp -f "${S_FILE}" "${S_FILE}.bak"
         echo "Installing new Configs..."
         unzip -oq "${TMP_PATH}/configs.zip" -d "${MODEL_CONFIG_PATH}"
-        CONFHASHCHECK="$(cat "${S_FILE_CHECK}")"
         rm -f "${TMP_PATH}/configs.zip"
         echo "Installation done!"
         sleep 2
@@ -1847,12 +1847,13 @@ function decryptMenu() {
     return 1
   fi
   if [ -f "${S_FILE_ENC}" ]; then
-    CONFIGSVERSION="$(cat "${MODEL_CONFIG_PATH}/VERSION")"
+    CONFIGSVERSION=$(cat "${MODEL_CONFIG_PATH}/VERSION")
     ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
     if openssl enc -in "${S_FILE_ENC}" -out "${S_FILE_ARC}" -d -aes-256-cbc -k "${ARCKEY}" 2>/dev/null; then
+        CONFHASHARC="$(sha256sum "${S_FILE_ARC}" | awk '{print $1}')"
+        CONFHASHCHECK=$(cat "${S_FILE_CHECK}")
         dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
           --msgbox "Decrypt successful: You can use Arc Patch." 5 50
-        CONFHASHARC="$(sha256sum "${S_FILE_ARC}" | awk '{print $1}')"
         [ "${CONFHASHCHECK}" == "${CONFHASHARC}" ] && mv -f "${S_FILE_ARC}" "${S_FILE}" || mv -f "${S_FILE}.bak" "${S_FILE}"
     else
       while true; do
@@ -1860,11 +1861,12 @@ function decryptMenu() {
         dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
           --inputbox "Enter Decryption Key for ${CONFIGSVERSION}!\nKey is available in my Discord:\nhttps://discord.auxxxilium.tech" 9 50 2>"${TMP_PATH}/resp"
         [ $? -ne 0 ] && break
-        ARCKEY="$(cat "${TMP_PATH}/resp")"
+        ARCKEY=$(cat "${TMP_PATH}/resp")
         if openssl enc -in "${S_FILE_ENC}" -out "${S_FILE_ARC}" -d -aes-256-cbc -k "${ARCKEY}" 2>/dev/null; then
+          CONFHASHARC="$(sha256sum "${S_FILE_ARC}" | awk '{print $1}')"
+          CONFHASHCHECK=$(cat "${S_FILE_CHECK}")
           dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
             --msgbox "Decrypt successful: You can use Arc Patch." 5 50
-          CONFHASHARC="$(sha256sum "${S_FILE_ARC}" | awk '{print $1}')"
           [ "${CONFHASHCHECK}" == "${CONFHASHARC}" ] && mv -f "${S_FILE_ARC}" "${S_FILE}" || mv -f "${S_FILE}.bak" "${S_FILE}"
           writeConfigKey "arc.key" "${ARCKEY}" "${USER_CONFIG_FILE}"
           ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"

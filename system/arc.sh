@@ -453,7 +453,7 @@ function arcPatch() {
   elif [ "${ARCMODE}" == "config" ]; then
     dialog --clear --backtitle "$(backtitle)" \
       --nocancel --title "SN/Mac Options"\
-      --menu "Please choose an Option." 7 60 0 \
+      --menu "Choose an Option." 7 60 0 \
       1 "Use Arc Patch (AME, QC, Push Notify and more)" \
       2 "Use random SN/Mac (Reduced DSM Features)" \
       3 "Use my own SN/Mac (Be sure your Data is valid)" \
@@ -461,6 +461,7 @@ function arcPatch() {
     resp=$(cat ${TMP_PATH}/resp)
     [ -z "${resp}" ] && return 1
     if [ ${resp} -eq 1 ]; then
+      [ -z "${ARCCONF}" ] && decryptMenu
       if [ -n "${ARCCONF}" ] && [ "${CONFHASH}" == "${CONFHASHFILE}" ]; then
         # Read Arc Patch from File
         SN="$(generateSerial "${MODEL}" "true" | tr '[:lower:]' '[:upper:]')"
