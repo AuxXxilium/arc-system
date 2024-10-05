@@ -914,7 +914,13 @@ elif [ "${ARCMODE}" == "automated" ]; then
     make
   fi
 else
-  [ "${BUILDDONE}" == "true" ] && NEXT="3" || [ "${CONFDONE}" == "true" ] && NEXT="2" || NEXT="1"
+  if [ "${BUILDDONE}" == "true" ]; then
+    NEXT="3"
+  elif [ "${CONFDONE}" == "true" ]; then
+   NEXT="2"
+  else
+    NEXT="1"
+  fi
   while true; do
     echo "= \"\Z4========== Main ==========\Zn \" "                                            >"${TMP_PATH}/menu"
     if [ -z "${ARCCONF}" ] && [ ! -f "${S_FILE_ENC}" ]; then
