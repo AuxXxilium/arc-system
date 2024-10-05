@@ -798,7 +798,7 @@ function arcFinish() {
   if [ -n "${MODELID}" ]; then
     writeConfigKey "arc.builddone" "true" "${USER_CONFIG_FILE}"
     BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
-    if [ "${ARCMODE}" == "automated" ]; then
+    if [ "${ARCMODE}" == "automated" ] || [ "${UPDATEMODE}" == "true" ]; then
       boot
     else
       # Ask for Boot
@@ -821,6 +821,8 @@ function arcFinish() {
 ###############################################################################
 # Loading Update Mode
 function arcUpdate() {
+  KERNEL="$(readConfigKey "kernel" "${USER_CONFIG_FILE}")"
+  BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
   FAILED="false"
   # Automatic Update
   updateAddons
@@ -831,24 +833,34 @@ function arcUpdate() {
   [ $? -ne 0 ] && FAILED="true"
   updatePatches
   [ $? -ne 0 ] && FAILED="true"
-  updateCustom
-  [ $? -ne 0 ] && FAILED="true"
+  if [ "${KERNEL}" == "custom" ]; then
+    updateCustom
+    [ $? -ne 0 ] && FAILED="true"
+  fi
   if [ "${FAILED}" == "true" ] && [ "${UPDATEMODE}" == "true" ]; then
     dialog --backtitle "$(backtitle)" --title "Full-Update Loader" --aspect 18 \
-      --infobox "Update failed!\nPlease try again later." 0 0
+      --infobox "Update failed!\nTry again later." 0 0
     sleep 3
     exec reboot
   elif [ "${FAILED}" == "true" ]; then
     dialog --backtitle "$(backtitle)" --title "Full-Update Loader" --aspect 18 \
-      --infobox "Update failed!\nRebooting to Config Mode..." 0 0
+      --infobox "Update failed!\nTry again later." 0 0
     sleep 3
-    rebootTo config
+  elif [ "${FAILED}" == "false" ] && [ "${UPDATEMODE}" == "true" ]; then
+    # Ask for Boot
+    dialog --backtitle "$(backtitle)" --title "Full-Update Loader" --aspect 18 \
+      --infobox "Update successful! -> Building now..." 0 0
+    sleep 3
+    writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
+    BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
+    make
+  elif [ "${FAILED}" == "false" ]; then
+    dialog --backtitle "$(backtitle)" --title "Full-Update Loader" --aspect 18 \
+      --infobox "Update successful!" 0 0
+    writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
+    BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
+    sleep 3
   fi
-  # Ask for Boot
-  dialog --backtitle "$(backtitle)" --title "Full-Update Loader" --aspect 18 \
-    --infobox "Update successful!" 0 0
-  sleep 3
-  updateboot
 }
 
 ###############################################################################
@@ -880,24 +892,6 @@ function boot() {
   sleep 2
   exec reboot
   exit 0
-}
-
-###############################################################################
-# Calls boot.sh to boot into automated Mode
-function updateboot() {
-  BUILDDONE="$(readConfigKey "arc.confdone" "${USER_CONFIG_FILE}")"
-  if [ "${BUILDDONE}" == "true" ]; then
-    dialog --backtitle "$(backtitle)" --title "Arc Boot" \
-      --infobox "Rebooting to automated Build Mode...\nPlease stay patient!" 4 30
-    [ ! -f "${PART3_PATH}/automated" ] && echo "${ARC_VERSION}-${MODEL}-${PRODUCTVER}" >"${PART3_PATH}/automated"
-    sleep 3
-    rebootTo automated
-  else
-    dialog --backtitle "$(backtitle)" --title "Arc Boot" \
-      --infobox "Rebooting to Config Mode...\nPlease stay patient!" 4 30
-    sleep 3
-    rebootTo config
-  fi
 }
 
 ###############################################################################
