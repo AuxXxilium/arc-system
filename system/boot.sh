@@ -5,7 +5,6 @@ set -e
 
 . ${ARC_PATH}/include/functions.sh
 . ${ARC_PATH}/include/addons.sh
-. ${ARC_PATH}/include/compat.sh
 
 # Clear logs for dbgutils addons
 rm -rf "${PART1_PATH}/logs" >/dev/null 2>&1 || true
@@ -20,9 +19,6 @@ ARCBRANCH="$(readConfigKey "arc.branch" "${USER_CONFIG_FILE}")"
 BUS=$(getBus "${LOADER_DISK}")
 # Check if machine has EFI
 [ -d /sys/firmware/efi ] && EFI=1 || EFI=0
-
-# Call compatboot helper
-compatboot
 
 # Print Title centralized
 clear

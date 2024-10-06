@@ -456,7 +456,7 @@ function updateLKMs() {
 ###############################################################################
 # Update Offline
 function updateOffline() {
-  local MODE="$(readConfigKey "arc.mode" "${USER_CONFIG_FILE}")"
+  local ARCMODE="$(readConfigKey "arc.mode" "${USER_CONFIG_FILE}")"
   if [ "${ARCMODE}" != "automated" ]; then
     # Download offline file
     rm -f "${SYSTEM_PATH}/include/offline.json"
