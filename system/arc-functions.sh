@@ -53,8 +53,6 @@ function addonSelection() {
       continue
     elif [ "${ADDON}" == "codecpatch" ] && [ -n "${ARCCONF}" ]; then
       continue
-    elif [ "${ADDON}" == "cpufreqscaling" ] && [[ "${CPUFREQ}" == "false" || "${ACPISYS}" == "false" ]] ; then
-      continue
     else
       echo -e "${ADDON} \"${DESC}\" ${ACT}" >>"${TMP_PATH}/opts"
     fi
@@ -1976,40 +1974,6 @@ function resetDSMNetwork {
   dialog --backtitle "$(backtitle)" --title "Reset DSM Network" \
     --msgbox "${MSG}" 0 0
   return
-}
-
-###############################################################################
-# CPU Governor Menu
-function governorMenu () {
-  governorSelection
-  writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
-  BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
-  return
-}
-
-function governorSelection () {
-  rm -f "${TMP_PATH}/opts" >/dev/null
-  touch "${TMP_PATH}/opts"
-  if [ "${ARCMODE}" == "config" ]; then
-    # Selectable CPU governors
-    [ "${PLATFORM}" == "epyc7002" ] && echo -e "schedutil \"use schedutil to scale frequency *\"" >>"${TMP_PATH}/opts"
-    [ "${PLATFORM}" != "epyc7002" ] && echo -e "ondemand \"use ondemand to scale frequency *\"" >>"${TMP_PATH}/opts"
-    [ "${PLATFORM}" != "epyc7002" ] && echo -e "conservative \"use conservative to scale frequency\"" >>"${TMP_PATH}/opts"
-    echo -e "performance \"always run at max frequency\"" >>"${TMP_PATH}/opts"
-    echo -e "powersave \"always run at lowest frequency\"" >>"${TMP_PATH}/opts"
-    dialog --backtitle "$(backtitle)" --title "CPU Frequency Scaling" \
-      --menu  "Choose a Governor\n* Recommended Option" 0 0 0 --file "${TMP_PATH}/opts" \
-      2>${TMP_PATH}/resp
-    [ $? -ne 0 ] && return
-    resp=$(cat ${TMP_PATH}/resp)
-    [ -z "${resp}" ] && return
-    CPUGOVERNOR=${resp}
-  else
-    [ "${PLATFORM}" == "epyc7002" ] && CPUGOVERNOR="schedutil"
-    [ "${PLATFORM}" != "epyc7002" ] && CPUGOVERNOR="ondemand"
-  fi
-  writeConfigKey "addons.cpufreqscaling" "${CPUGOVERNOR}" "${USER_CONFIG_FILE}"
-  CPUGOVERNOR="$(readConfigKey "addons.cpufreqscaling" "${USER_CONFIG_FILE}")"
 }
 
 ###############################################################################

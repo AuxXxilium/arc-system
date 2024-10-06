@@ -559,7 +559,7 @@ function systemCheck () {
   fi
   # Check for CPU Frequency Scaling
   CPUFREQUENCIES=$(ls -ltr /sys/devices/system/cpu/cpufreq/* 2>/dev/null | wc -l)
-  if [ ${CPUFREQUENCIES} -gt 0 ] && [ "${ACPISYS}" == "true" ]; then
+  if [ ${CPUFREQUENCIES} -gt 1 ] && [ "${ACPISYS}" == "true" ]; then
     CPUFREQ="true"
   else
     CPUFREQ="false"
