@@ -107,7 +107,7 @@ function updateSystem() {
 ###############################################################################
 # Update Addons
 function updateAddons() {
-  local ADDONSVERSION="$(cat "${ADDONS_PATH}/VERSION")"
+  [ -f "${ADDONS_PATH}/VERSION" ] && local ADDONSVERSION="$(cat "${ADDONS_PATH}/VERSION")" || ADDONSVERSION="0.0.0"
   # Check for new Version
   idx=0
   while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
@@ -156,7 +156,7 @@ function updateAddons() {
 ###############################################################################
 # Update Patches
 function updatePatches() {
-  local PATCHESVERSION="$(cat "${PATCH_PATH}/VERSION")"
+  [ -f "${PATCH_PATH}/VERSION" ] && local PATCHESVERSION="$(cat "${PATCH_PATH}/VERSION")" || PATCHESVERSION="0.0.0"
   # Check for new Version
   idx=0
   while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
@@ -198,7 +198,7 @@ function updatePatches() {
 ###############################################################################
 # Update Custom
 function updateCustom() {
-  local CUSTOMVERSION="$(cat "${CUSTOM_PATH}/VERSION")"
+  [ -f "${CUSTOM_PATH}/VERSION" ] && local CUSTOMVERSION="$(cat "${CUSTOM_PATH}/VERSION")" || CUSTOMVERSION="0.0.0"
   # Check for new Version
   idx=0
   while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
@@ -298,7 +298,7 @@ function updateModules() {
 # Update Configs
 function updateConfigs() {
   local ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
-  local CONFIGSVERSION="$(cat "${MODEL_CONFIG_PATH}/VERSION")"
+  [ -f "${MODEL_CONFIGS_PATH}/VERSION" ] && local CONFIGSVERSION="$(cat "${MODEL_CONFIG_PATH}/VERSION")" || CONFIGSVERSION="0.0.0"
   if [ -z "${1}" ]; then
     # Check for new Version
     idx=0
@@ -345,7 +345,7 @@ function updateConfigs() {
 ###############################################################################
 # Update LKMs
 function updateLKMs() {
-  local LKMVERSION="$(cat "${LKMS_PATH}/VERSION")"
+  [ -f "${LKMS_PATH}/VERSION" ] && local LKMVERSION="$(cat "${LKMS_PATH}/VERSION")" || LKMVERSION="0.0.0"
   if [ -z "${1}" ]; then
     # Check for new Version
     idx=0
