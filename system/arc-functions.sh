@@ -724,6 +724,7 @@ function backupMenu() {
           fi
         done
         if [ -f "${USER_CONFIG_FILE}" ]; then
+          . ${ARC_PATH}/include/compat.sh
           PRODUCTVER="$(readConfigKey "productver" "${USER_CONFIG_FILE}")"
           if [ -n "${PRODUCTVER}" ]; then
             PLATFORM="$(readConfigKey "platform" "${USER_CONFIG_FILE}")"

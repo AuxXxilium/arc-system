@@ -48,5 +48,8 @@ initConfigKey "synoinfo" "{}" "${USER_CONFIG_FILE}"
 initConfigKey "usbmount" "auto" "${USER_CONFIG_FILE}"
 initConfigKey "zimage-hash" "" "${USER_CONFIG_FILE}"
 
+deleteConfigKey "addons.cpufreqscaling" "${USER_CONFIG_FILE}"
+deleteConfigKey "addons.console" "${USER_CONFIG_FILE}"
+
 # Update Offline Configs
 updateOffline
