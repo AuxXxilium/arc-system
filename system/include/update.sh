@@ -7,7 +7,7 @@ function upgradeLoader () {
     # Check for new Version
     idx=0
     while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
-      local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-e/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
+      local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
       if [ -n "${TAG}" ]; then
         break
       fi
@@ -22,9 +22,9 @@ function upgradeLoader () {
       # Download update file
       echo "Downloading ${TAG}"
       if [ "${ARCBRANCH}" != "stable" ]; then
-        local URL="https://github.com/AuxXxilium/arc-e/releases/download/${TAG}/arc-${TAG}-${ARCBRANCH}.img.zip"
+        local URL="https://github.com/AuxXxilium/arc/releases/download/${TAG}/arc-${TAG}-${ARCBRANCH}.img.zip"
       else
-        local URL="https://github.com/AuxXxilium/arc-e/releases/download/${TAG}/arc-${TAG}.img.zip"
+        local URL="https://github.com/AuxXxilium/arc/releases/download/${TAG}/arc-${TAG}.img.zip"
       fi
       curl -#kL "${URL}" -o "${TMP_PATH}/arc.img.zip" 2>&1 | while IFS= read -r -n1 char; do
         [[ $char =~ [0-9] ]] && keep=1 ;
@@ -59,62 +59,6 @@ function upgradeLoader () {
       sleep 2
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Upgrade Loader" \
       --progressbox "Upgrading Loader..." 20 70
-  else
-    updateFaileddialog
-  fi
-  return 0
-}
-
-###############################################################################
-# Update Loader
-function updateLoader() {
-  local ARCMODE="$(readConfigKey "arc.mode" "${USER_CONFIG_FILE}")"
-  local ARCBRANCH="$(readConfigKey "arc.branch" "${USER_CONFIG_FILE}")"
-  if [ -z "${1}" ]; then
-    # Check for new Version
-    idx=0
-    while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
-      local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-e/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
-      if [ -n "${TAG}" ]; then
-        break
-      fi
-      sleep 3
-      idx=$((${idx} + 1))
-    done
-  else
-    local TAG="${1}"
-  fi
-  if [ -n "${TAG}" ]; then
-    (
-      # Download update file
-      echo "Downloading ${TAG}"
-      if [ "${ARCBRANCH}" != "stable" ]; then
-        local URL="https://github.com/AuxXxilium/arc-e/releases/download/${TAG}/update-${ARCBRANCH}.zip"
-      else
-        local URL="https://github.com/AuxXxilium/arc-e/releases/download/${TAG}/update.zip"
-      fi
-      curl -#kL "${URL}" -o "${TMP_PATH}/update.zip" 2>&1 | while IFS= read -r -n1 char; do
-        [[ $char =~ [0-9] ]] && keep=1 ;
-        [[ $char == % ]] && echo "$progress%" && progress="" && keep=0 ;
-        [[ $keep == 1 ]] && progress="$progress$char" ;
-      done
-      if [ -f "${TMP_PATH}/update.zip" ]; then
-        echo "Installing new Base Image..."
-        unzip -oq "${TMP_PATH}/update.zip" -d "${PART3_PATH}"
-        mv -f "${PART3_PATH}/grub.cfg" "${USER_GRUB_CONFIG}"
-        mv -f "${PART3_PATH}/ARC-BASE-VERSION" "${PART1_PATH}/ARC-BASE-VERSION"
-        mv -f "${PART3_PATH}/ARC-BRANCH" "${PART1_PATH}/ARC-BRANCH"
-        rm -f "${TMP_PATH}/update.zip"
-        echo "Successful!"
-      else
-        echo "Error downloading new Version!"
-        sleep 5
-        updateFailed
-      fi
-    ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Full-Update Loader" \
-      --progressbox "Updating Loader..." 20 70
-  else
-    updateFaileddialog
   fi
   return 0
 }
@@ -156,8 +100,6 @@ function updateSystem() {
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "System" \
       --progressbox "Installing System Update..." 20 70
-  else
-    updateFaileddialog
   fi
   return 0
 }
@@ -165,6 +107,7 @@ function updateSystem() {
 ###############################################################################
 # Update Addons
 function updateAddons() {
+  local ADDONSVERSION="$(cat "${ADDONS_PATH}/VERSION")"
   # Check for new Version
   idx=0
   while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
@@ -175,7 +118,7 @@ function updateAddons() {
     sleep 3
     idx=$((${idx} + 1))
   done
-  if [ -n "${TAG}" ]; then
+  if [ -n "${TAG}" ] && [ "${ADDONSVERSION}" != "${TAG}" ]; then
     (
       # Download update file
       echo "Downloading ${TAG}"
@@ -206,8 +149,6 @@ function updateAddons() {
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Addons" \
       --progressbox "Installing Addons..." 20 70
-  else
-    updateFaileddialog
   fi
   return 0
 }
@@ -215,6 +156,7 @@ function updateAddons() {
 ###############################################################################
 # Update Patches
 function updatePatches() {
+  local PATCHESVERSION="$(cat "${PATCH_PATH}/VERSION")"
   # Check for new Version
   idx=0
   while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
@@ -225,7 +167,7 @@ function updatePatches() {
     sleep 3
     idx=$((${idx} + 1))
   done
-  if [ -n "${TAG}" ]; then
+  if [ -n "${TAG}" ] && [ "${PATCHESVERSION}" != "${TAG}" ]; then
     (
       # Download update file
       local URL="https://github.com/AuxXxilium/arc-patches/releases/download/${TAG}/patches.zip"
@@ -249,8 +191,6 @@ function updatePatches() {
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Patches" \
       --progressbox "Installing Patches..." 20 70
-  else
-    updateFaileddialog
   fi
   return 0
 }
@@ -258,6 +198,7 @@ function updatePatches() {
 ###############################################################################
 # Update Custom
 function updateCustom() {
+  local CUSTOMVERSION="$(cat "${CUSTOM_PATH}/VERSION")"
   # Check for new Version
   idx=0
   while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
@@ -268,7 +209,7 @@ function updateCustom() {
     sleep 3
     idx=$((${idx} + 1))
   done
-  if [ -n "${TAG}" ]; then
+  if [ -n "${TAG}" ] && [ "${CUSTOMVERSION}" != "${TAG}" ]; then
     (
       # Download update file
       local URL="https://github.com/AuxXxilium/arc-custom/releases/download/${TAG}/custom.zip"
@@ -292,8 +233,6 @@ function updateCustom() {
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Custom" \
       --progressbox "Installing Custom..." 20 70
-  else
-    updateFaileddialog
   fi
   return 0
 }
@@ -351,8 +290,6 @@ function updateModules() {
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Modules" \
       --progressbox "Installing Modules..." 20 70
-  else
-    updateFaileddialog
   fi
   return 0
 }
@@ -361,6 +298,7 @@ function updateModules() {
 # Update Configs
 function updateConfigs() {
   local ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
+  local CONFIGSVERSION="$(cat "${MODEL_CONFIG_PATH}/VERSION")"
   if [ -z "${1}" ]; then
     # Check for new Version
     idx=0
@@ -375,7 +313,7 @@ function updateConfigs() {
   else
     local TAG="${1}"
   fi
-  if [ -n "${TAG}" ]; then
+  if [ -n "${TAG}" ] && [ "${CONFIGSVERSION}" != "${TAG}" ]; then
     (
       # Download update file
       local URL="https://github.com/AuxXxilium/arc-configs/releases/download/${TAG}/configs.zip"
@@ -400,8 +338,6 @@ function updateConfigs() {
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Configs" \
       --progressbox "Installing Configs..." 20 70
-  else
-    updateFaileddialog
   fi
   return 0
 }
@@ -409,6 +345,7 @@ function updateConfigs() {
 ###############################################################################
 # Update LKMs
 function updateLKMs() {
+  local LKMVERSION="$(cat "${LKMS_PATH}/VERSION")"
   if [ -z "${1}" ]; then
     # Check for new Version
     idx=0
@@ -423,7 +360,7 @@ function updateLKMs() {
   else
     local TAG="${1}"
   fi
-  if [ -n "${TAG}" ]; then
+  if [ -n "${TAG}" ] && [ "${LKMVERSION}" != "${TAG}" ]; then
     (
       # Download update file
       local URL="https://github.com/AuxXxilium/arc-lkm/releases/download/${TAG}/rp-lkms.zip"
@@ -447,8 +384,6 @@ function updateLKMs() {
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "LKMs" \
       --progressbox "Installing LKMs..." 20 70
-  else
-    updateFaileddialog
   fi
   return 0
 }
