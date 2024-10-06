@@ -366,7 +366,7 @@ function arcVersion() {
     ADDONS="$(readConfigKey "addons" "${USER_CONFIG_FILE}")"
     DEVICENIC="$(readConfigKey "device.nic" "${USER_CONFIG_FILE}")"
     ARCCONF="$(readConfigKey "${MODEL}.serial" "${S_FILE}")"
-    [ $(ls "${ADDONS_PATH}" | wc -l) -lt 2 ] && updateAddons
+    updateAddons
     if [ "${ADDONS}" == "{}" ]; then
       initConfigKey "addons.acpid" "" "${USER_CONFIG_FILE}"
       initConfigKey "addons.cpuinfo" "" "${USER_CONFIG_FILE}"
@@ -401,7 +401,7 @@ function arcVersion() {
       fi
     done < <(readConfigMap "addons" "${USER_CONFIG_FILE}")
     # Reset Modules
-    [ $(ls "${MODULES_PATH}" | wc -l) -lt 2 ] && updateModules
+    updateModules
     # Check for Only Version
     if [ "${ONLYVERSION}" == "true" ]; then
       writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
