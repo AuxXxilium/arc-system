@@ -454,6 +454,18 @@ function updateLKMs() {
 }
 
 ###############################################################################
+# Update Offline
+function updateOffline() {
+  local MODE="$(readConfigKey "arc.mode" "${USER_CONFIG_FILE}")"
+  if [ "${ARCMODE}" != "automated" ]; then
+    # Download offline file
+    rm -f "${SYSTEM_PATH}/include/offline.json"
+    curl -skL "https://autoupdate.synology.com/os/v2" -o "${SYSTEM_PATH}/include/offline.json"
+  fi
+  return 0
+}
+
+###############################################################################
 # Update Failed
 function updateFailed() {
   local MODE="$(readConfigKey "arc.mode" "${USER_CONFIG_FILE}")"

