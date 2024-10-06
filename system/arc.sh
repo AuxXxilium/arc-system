@@ -391,9 +391,6 @@ function arcVersion() {
       if echo "${PAT_URL}" 2>/dev/null | grep -q "7.2.2"; then
         initConfigKey "addons.allowdowngrade" "" "${USER_CONFIG_FILE}"
       fi
-      if [ ${DEVICENIC} -gt 1 ]; then
-        initConfigKey "addons.multismb3" "" "${USER_CONFIG_FILE}"
-      fi
       if [ -n "${ARCCONF}" ]; then
         initConfigKey "addons.arcdns" "" "${USER_CONFIG_FILE}"
       fi
