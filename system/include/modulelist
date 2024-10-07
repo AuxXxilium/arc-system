@@ -15,6 +15,9 @@ F kvm.ko
 # acpi
 N acpi_call.ko
 
+# cpufreq
+C cpufreq_conservative.ko
+
 # misc
 N check_signature.ko
 
