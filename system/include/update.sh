@@ -21,11 +21,7 @@ function upgradeLoader () {
     (
       # Download update file
       echo "Downloading ${TAG}"
-      if [ "${ARCBRANCH}" != "stable" ]; then
-        local URL="https://github.com/AuxXxilium/arc/releases/download/${TAG}/arc-${TAG}-${ARCBRANCH}.img.zip"
-      else
-        local URL="https://github.com/AuxXxilium/arc/releases/download/${TAG}/arc-${TAG}.img.zip"
-      fi
+      local URL="https://github.com/AuxXxilium/arc/releases/download/${TAG}/arc-${TAG}-${ARCBRANCH}.img.zip"
       curl -#kL "${URL}" -o "${TMP_PATH}/arc.img.zip" 2>&1 | while IFS= read -r -n1 char; do
         [[ $char =~ [0-9] ]] && keep=1 ;
         [[ $char == % ]] && echo "$progress%" && progress="" && keep=0 ;
@@ -38,7 +34,7 @@ function upgradeLoader () {
       fi
       unzip -oq "${TMP_PATH}/arc.img.zip" -d "${TMP_PATH}"
       rm -f "${TMP_PATH}/arc.img.zip" >/dev/null
-      echo "Installing new Base Image..."
+      echo "Flashing Base Image..."
       # Process complete update
       umount "${PART1_PATH}" "${PART2_PATH}" "${PART3_PATH}"
       if [ "${ARCBRANCH}" != "stable" ]; then
@@ -59,6 +55,48 @@ function upgradeLoader () {
       sleep 2
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Upgrade Loader" \
       --progressbox "Upgrading Loader..." 20 70
+  fi
+  return 0
+}
+
+###############################################################################
+# Update Loader
+function updateLoader() {
+  local ARCBRANCH="$(readConfigKey "arc.branch" "${USER_CONFIG_FILE}")"
+  # Check for new Version
+  idx=0
+  while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
+    local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
+    if [ -n "${TAG}" ]; then
+      break
+    fi
+    sleep 3
+    idx=$((${idx} + 1))
+  done
+  if [ -n "${TAG}" ]; then
+    (
+      # Download update file
+      echo "Downloading ${TAG}"
+      local URL="https://github.com/AuxXxilium/arc/releases/download/${TAG}/update-${TAG}-${ARCBRANCH}.zip"
+      curl -#kL "${URL}" -o "${TMP_PATH}/update.zip" 2>&1 | while IFS= read -r -n1 char; do
+        [[ $char =~ [0-9] ]] && keep=1 ;
+        [[ $char == % ]] && echo "$progress%" && progress="" && keep=0 ;
+        [[ $keep == 1 ]] && progress="$progress$char" ;
+      done
+      if [ -f "${TMP_PATH}/update.zip" ]; then
+        echo "Downloading Base Image successful!"
+      else
+        updateFailed
+      fi
+      echo "Updating Base Image..."
+      unzip -oq "${TMP_PATH}/update.zip" -d "${PART3_PATH}"
+      rm -f "${TMP_PATH}/update.zip" >/dev/null
+      # Process complete update
+      echo "Successful! -> Rebooting..."
+      deleteConfigKey "arc.confhash" "${USER_CONFIG_FILE}"
+      sleep 2
+    ) 2>&1 | dialog --backtitle "$(backtitle)" --title "System" \
+      --progressbox "Installing System Update..." 20 70
   fi
   return 0
 }
@@ -240,6 +278,7 @@ function updateCustom() {
 ###############################################################################
 # Update Modules
 function updateModules() {
+  [ -f "${MODULES_PATH}/VERSION" ] && local MODULESVERSION="$(cat "${MODULES_PATH}/VERSION")" || MODULESVERSION="0.0.0"
   local PRODUCTVER="$(readConfigKey "productver" "${USER_CONFIG_FILE}")"
   local PLATFORM="$(readConfigKey "platform" "${USER_CONFIG_FILE}")"
   local KVER="$(readConfigKey "platforms.${PLATFORM}.productvers.\"${PRODUCTVER}\".kver" "${P_FILE}")"
@@ -253,7 +292,7 @@ function updateModules() {
     sleep 3
     idx=$((${idx} + 1))
   done
-  if [ -n "${TAG}" ]; then
+  if [ -n "${TAG}" ] && [ "${MODULESVERSION}" != "${TAG}" ]; then
     (
       rm -rf "${MODULES_PATH}"
       mkdir -p "${MODULES_PATH}"
