@@ -1987,7 +1987,7 @@ function mountDSM() {
   vgchange -ay >/dev/null 2>&1
   VOLS="$(lvdisplay 2>/dev/null | grep 'LV Path' | grep -v 'syno_vg_reserved_area' | awk '{print $3}')"
   if [ -z "${VOLS}" ]; then
-    DIALOG --title "Mount DSM Pool" \
+    dialog --backtitle "$(backtitle)" --title "Mount DSM Pool" \
       --msgbox "No storage pool found!" 0 0
     return
   fi
@@ -1998,7 +1998,7 @@ function mountDSM() {
     mount ${I} "/mnt/DSM/${NAME}" -o ro
   done
   MSG="All storage pools are mounted under /mnt/DSM. Please check them yourself via shell/DUFS."
-  DIALOG --title "Mount DSM Pool" \
+  dialog --backtitle "$(backtitle)" --title "Mount DSM Pool" \
     --msgbox "${MSG}" 0 0
   return
 }
