@@ -327,12 +327,6 @@ function arcVersion() {
       ARCMODE="config"
     fi
     writeConfigKey "arc.mode" "${ARCMODE}" "${USER_CONFIG_FILE}"
-  elif [ "${ARCMODE}" == "automated" ] || [ "${ARCRESTORE}" == "true" ]; then
-    PAT_URL="$(readConfigKey "paturl" "${USER_CONFIG_FILE}")"
-    PAT_HASH="$(readConfigKey "pathash" "${USER_CONFIG_FILE}")"
-    VALID="true"
-  fi
-  if [ "${ARCMODE}" != "automated" ];  then
     # Check PAT URL
     dialog --backtitle "$(backtitle)" --colors --title "DSM Version" \
       --infobox "Check PAT Data..." 3 40
@@ -345,6 +339,8 @@ function arcVersion() {
       writeConfigKey "paturl" "${PAT_URL}" "${USER_CONFIG_FILE}"
       writeConfigKey "pathash" "${PAT_HASH}" "${USER_CONFIG_FILE}"
     fi
+  elif [ "${ARCMODE}" == "automated" ] || [ "${ARCRESTORE}" == "true" ]; then
+    VALID="true"
   fi
   # Check PAT Hash
   PAT_URL="$(readConfigKey "paturl" "${USER_CONFIG_FILE}")"
@@ -582,7 +578,7 @@ function arcSettings() {
     deleteConfigKey "modules.mmc_block" "${USER_CONFIG_FILE}"
     deleteConfigKey "modules.mmc_core" "${USER_CONFIG_FILE}"
   fi
-  if [ -n "${PLATFORM}" ]&& [ -n "${MODEL}" ] && [ -n "${KVER}" ] && [ -n "${PAT_URL}" ]&& [ -n "${PAT_HASH}" ]; then
+  if [ -n "${PLATFORM}" ] && [ -n "${MODEL}" ] && [ -n "${KVER}" ] && [ -n "${PAT_URL}" ] && [ -n "${PAT_HASH}" ]; then
     # Config is done
     writeConfigKey "arc.confdone" "true" "${USER_CONFIG_FILE}"
     CONFDONE="$(readConfigKey "arc.confdone" "${USER_CONFIG_FILE}")"
