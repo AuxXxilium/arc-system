@@ -53,6 +53,8 @@ function addonSelection() {
       continue
     elif [ "${ADDON}" == "codecpatch" ] && [ -n "${ARCCONF}" ]; then
       continue
+    elif [ "${ADDON}" == "cpufreqscaling" ] && [[ "${CPUFREQ}" == "false" || "${ACPISYS}" == "false" ]] ; then
+      continue
     else
       echo -e "${ADDON} \"${DESC}\" ${ACT}" >>"${TMP_PATH}/opts"
     fi
@@ -1976,6 +1978,63 @@ function resetDSMNetwork {
   dialog --backtitle "$(backtitle)" --title "Reset DSM Network" \
     --msgbox "${MSG}" 0 0
   return
+}
+
+###############################################################################
+# Mount DSM Storage Pools
+function mountDSM() {
+  vgscan >/dev/null 2>&1
+  vgchange -ay >/dev/null 2>&1
+  VOLS="$(lvdisplay 2>/dev/null | grep 'LV Path' | grep -v 'syno_vg_reserved_area' | awk '{print $3}')"
+  if [ -z "${VOLS}" ]; then
+    DIALOG --title "Mount DSM Pool" \
+      --msgbox "No storage pool found!" 0 0
+    return
+  fi
+  for I in ${VOLS}; do
+    NAME="$(echo "${I}" | awk -F'/' '{print $3"_"$4}')"
+    mkdir -p "/mnt/DSM/${NAME}"
+    umount "${I}" 2>/dev/null
+    mount ${I} "/mnt/DSM/${NAME}" -o ro
+  done
+  MSG="All storage pools are mounted under /mnt/DSM. Please check them yourself via shell/DUFS."
+  DIALOG --title "Mount DSM Pool" \
+    --msgbox "${MSG}" 0 0
+  return
+}
+
+###############################################################################
+# CPU Governor Menu
+function governorMenu () {
+  governorSelection
+  writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
+  BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
+  return
+}
+
+function governorSelection () {
+  rm -f "${TMP_PATH}/opts" >/dev/null
+  touch "${TMP_PATH}/opts"
+  if [ "${ARCMODE}" == "config" ]; then
+    # Selectable CPU governors
+    [ "${PLATFORM}" == "epyc7002" ] && echo -e "schedutil \"use schedutil to scale frequency *\"" >>"${TMP_PATH}/opts"
+    [ "${PLATFORM}" != "epyc7002" ] && echo -e "ondemand \"use ondemand to scale frequency *\"" >>"${TMP_PATH}/opts"
+    [ "${PLATFORM}" != "epyc7002" ] && echo -e "conservative \"use conservative to scale frequency\"" >>"${TMP_PATH}/opts"
+    echo -e "performance \"always run at max frequency\"" >>"${TMP_PATH}/opts"
+    echo -e "powersave \"always run at lowest frequency\"" >>"${TMP_PATH}/opts"
+    dialog --backtitle "$(backtitle)" --title "CPU Frequency Scaling" \
+      --menu  "Choose a Governor\n* Recommended Option" 0 0 0 --file "${TMP_PATH}/opts" \
+      2>${TMP_PATH}/resp
+    [ $? -ne 0 ] && return
+    resp=$(cat ${TMP_PATH}/resp)
+    [ -z "${resp}" ] && return
+    CPUGOVERNOR=${resp}
+  else
+    [ "${PLATFORM}" == "epyc7002" ] && CPUGOVERNOR="schedutil"
+    [ "${PLATFORM}" != "epyc7002" ] && CPUGOVERNOR="ondemand"
+  fi
+  writeConfigKey "addons.cpufreqscaling" "${CPUGOVERNOR}" "${USER_CONFIG_FILE}"
+  CPUGOVERNOR="$(readConfigKey "addons.cpufreqscaling" "${USER_CONFIG_FILE}")"
 }
 
 ###############################################################################

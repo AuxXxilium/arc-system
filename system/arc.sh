@@ -380,6 +380,9 @@ function arcVersion() {
         fi
         initConfigKey "addons.nvmevolume" "" "${USER_CONFIG_FILE}"
       fi
+      if [ "${CPUFREQ}" == "true" ] && [ "${ACPISYS}" == "true" ]; then
+        initConfigKey "addons.cpufreqscaling" "" "${USER_CONFIG_FILE}"
+      fi
       if [ "${MACHINE}" == "Native" ]; then
         initConfigKey "addons.powersched" "" "${USER_CONFIG_FILE}"
         initConfigKey "addons.sensors" "" "${USER_CONFIG_FILE}"
@@ -522,6 +525,21 @@ function arcSettings() {
       --infobox "Loading Addons Table..." 3 40
     addonSelection
     [ $? -ne 0 ] && return 1
+  fi
+  # Check for CPU Frequency Scaling & Governor
+  if [ "${ARCMODE}" == "config" ] && [ "${CPUFREQ}" == "true" ] && [ "${ACPISYS}" == "true" ] && readConfigMap "addons" "${USER_CONFIG_FILE}" | grep -q "cpufreqscaling"; then
+    dialog --backtitle "$(backtitle)" --colors --title "CPU Frequency Scaling" \
+      --infobox "Generating Governor Table..." 3 40
+    governorSelection
+    [ $? -ne 0 ] && return 1
+  elif [ "${ARCMODE}" == "automated" ] && [ "${CPUFREQ}" == "true" ] && [ "${ACPISYS}" == "true" ] && readConfigMap "addons" "${USER_CONFIG_FILE}" | grep -q "cpufreqscaling"; then
+    if [ "${PLATFORM}" == "epyc7002" ]; then
+      writeConfigKey "addons.cpufreqscaling" "schedutil" "${USER_CONFIG_FILE}"
+    else
+      writeConfigKey "addons.cpufreqscaling" "ondemand" "${USER_CONFIG_FILE}"
+    fi
+  else
+    deleteConfigKey "addons.cpufreqscaling" "${USER_CONFIG_FILE}"
   fi
   if [ "${ARCMODE}" == "config" ]; then
     # Check for DT and HBA/Raid Controller
@@ -942,6 +960,9 @@ else
         if [ "${DT}" == "true" ]; then
           echo "o \"DTS Map Options \" "                                                      >>"${TMP_PATH}/menu"
         fi
+        if readConfigMap "addons" "${USER_CONFIG_FILE}" | grep -q "cpufreqscaling"; then
+          echo "g \"Frequency Scaling Governor\" "                                            >>"${TMP_PATH}/menu"
+        fi
         if readConfigMap "addons" "${USER_CONFIG_FILE}" | grep -q "storagepanel"; then
           echo "P \"StoragePanel Options \" "                                                 >>"${TMP_PATH}/menu"
         fi
@@ -977,6 +998,7 @@ else
         echo "t \"Change User Password \" "                                                   >>"${TMP_PATH}/menu"
         echo "N \"Add new User\" "                                                            >>"${TMP_PATH}/menu"
         echo "J \"Reset Network Config \" "                                                   >>"${TMP_PATH}/menu"
+        echo "M \"Mount DSM Storage Pool\" "                                                  >>"${TMP_PATH}/menu"
         if [ "${PLATFORM}" == "epyc7002" ]; then
           echo "K \"Kernel: \Z4${KERNEL}\Zn \" "                                              >>"${TMP_PATH}/menu"
         fi
@@ -1070,6 +1092,7 @@ else
       N) addNewDSMUser; NEXT="N" ;;
       D) staticIPMenu; NEXT="D" ;;
       J) resetDSMNetwork; NEXT="J" ;;
+      M) mountDSM; NEXT="M" ;;
       K) [ "${KERNEL}" == "official" ] && KERNEL='custom' || KERNEL='official'
         writeConfigKey "kernel" "${KERNEL}" "${USER_CONFIG_FILE}"
         dialog --backtitle "$(backtitle)" --title "DSM Kernel" \
