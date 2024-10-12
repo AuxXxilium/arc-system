@@ -84,17 +84,20 @@ function updateLoader() {
         [[ $keep == 1 ]] && progress="$progress$char" ;
       done
       if [ -f "${TMP_PATH}/update.zip" ]; then
-        echo "Downloading Base Image successful!"
+        echo -e "Downloading Base Image successful!\nUpdating Base Image..."
+        if unzip -oq "${TMP_PATH}/update.zip" -d "${PART3_PATH}"; then
+          rm -f "${TMP_PATH}/update.zip" >/dev/null
+          echo "${TAG}" > "${PART1_PATH}/ARC-BASE-VERSION"
+          # Process complete update
+          echo "Successful! -> Rebooting..."
+          deleteConfigKey "arc.confhash" "${USER_CONFIG_FILE}"
+          sleep 2
+        else
+          updateFailed
+        fi
       else
         updateFailed
       fi
-      echo "Updating Base Image..."
-      unzip -oq "${TMP_PATH}/update.zip" -d "${PART3_PATH}"
-      rm -f "${TMP_PATH}/update.zip" >/dev/null
-      # Process complete update
-      echo "Successful! -> Rebooting..."
-      deleteConfigKey "arc.confhash" "${USER_CONFIG_FILE}"
-      sleep 2
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "System" \
       --progressbox "Installing System Update..." 20 70
   fi
@@ -128,9 +131,12 @@ function updateSystem() {
         rm -rf "${SYSTEM_PATH}"
         mkdir -p "${SYSTEM_PATH}"
         echo "Installing new System..."
-        unzip -oq "${TMP_PATH}/system.zip" -d "${PART3_PATH}"
-        rm -f "${TMP_PATH}/system.zip"
-        echo "Successful!"
+        if unzip -oq "${TMP_PATH}/system.zip" -d "${PART3_PATH}"; then
+          rm -f "${TMP_PATH}/system.zip"
+          echo "Successful!"
+        else
+          updateFailed
+        fi
       else
         echo "Error downloading new Version!"
         sleep 5
@@ -170,16 +176,19 @@ function updateAddons() {
         rm -rf "${ADDONS_PATH}"
         mkdir -p "${ADDONS_PATH}"
         echo "Installing new Addons..."
-        unzip -oq "${TMP_PATH}/addons.zip" -d "${ADDONS_PATH}"
-        rm -f "${TMP_PATH}/addons.zip"
-        for F in $(ls ${ADDONS_PATH}/*.addon 2>/dev/null); do
-          ADDON=$(basename "${F}" | sed 's|.addon||')
-          rm -rf "${ADDONS_PATH}/${ADDON}"
-          mkdir -p "${ADDONS_PATH}/${ADDON}"
-          tar -xaf "${F}" -C "${ADDONS_PATH}/${ADDON}"
-          rm -f "${F}"
-        done
-        echo "Successful!"
+        if unzip -oq "${TMP_PATH}/addons.zip" -d "${ADDONS_PATH}"; then
+          rm -f "${TMP_PATH}/addons.zip"
+          for F in $(ls ${ADDONS_PATH}/*.addon 2>/dev/null); do
+            ADDON=$(basename "${F}" | sed 's|.addon||')
+            rm -rf "${ADDONS_PATH}/${ADDON}"
+            mkdir -p "${ADDONS_PATH}/${ADDON}"
+            tar -xaf "${F}" -C "${ADDONS_PATH}/${ADDON}"
+            rm -f "${F}"
+          done
+          echo "Successful!"
+        else
+          updateFailed
+        fi
       else
         echo "Error downloading new Version!"
         sleep 5
@@ -219,9 +228,12 @@ function updatePatches() {
         rm -rf "${PATCH_PATH}"
         mkdir -p "${PATCH_PATH}"
         echo "Installing new Patches..."
-        unzip -oq "${TMP_PATH}/patches.zip" -d "${PATCH_PATH}"
-        rm -f "${TMP_PATH}/patches.zip"
-        echo "Successful!"
+        if unzip -oq "${TMP_PATH}/patches.zip" -d "${PATCH_PATH}"; then
+          rm -f "${TMP_PATH}/patches.zip"
+          echo "Successful!"
+        else
+          updateFailed
+        fi
       else
         echo "Error downloading new Version!"
         sleep 5
@@ -261,9 +273,12 @@ function updateCustom() {
         rm -rf "${CUSTOM_PATH}"
         mkdir -p "${CUSTOM_PATH}"
         echo "Installing new Custom Kernel..."
-        unzip -oq "${TMP_PATH}/custom.zip" -d "${CUSTOM_PATH}"
-        rm -f "${TMP_PATH}/custom.zip"
-        echo "Successful!"
+        if unzip -oq "${TMP_PATH}/custom.zip" -d "${CUSTOM_PATH}"; then
+          rm -f "${TMP_PATH}/custom.zip"
+          echo "Successful!"
+        else
+          updateFailed
+        fi
       else
         echo "Error downloading new Version!"
         sleep 5
@@ -365,11 +380,14 @@ function updateConfigs() {
       if [ -f "${TMP_PATH}/configs.zip" ]; then
         mkdir -p "${MODEL_CONFIG_PATH}"
         echo "Installing new Configs..."
-        unzip -oq "${TMP_PATH}/configs.zip" -d "${MODEL_CONFIG_PATH}"
-        rm -f "${TMP_PATH}/configs.zip"
-        CONFHASH="$(sha256sum "${S_FILE}" | awk '{print $1}')"
-        writeConfigKey "arc.confhash" "${CONFHASH}" "${USER_CONFIG_FILE}"
-        echo "Successful!"
+        if unzip -oq "${TMP_PATH}/configs.zip" -d "${MODEL_CONFIG_PATH}"; then
+          rm -f "${TMP_PATH}/configs.zip"
+          CONFHASH="$(sha256sum "${S_FILE}" | awk '{print $1}')"
+          writeConfigKey "arc.confhash" "${CONFHASH}" "${USER_CONFIG_FILE}"
+          echo "Successful!"
+        else
+          updateFailed
+        fi
       else
         echo "Error downloading new Version!"
         sleep 5
@@ -413,9 +431,12 @@ function updateLKMs() {
         rm -rf "${LKMS_PATH}"
         mkdir -p "${LKMS_PATH}"
         echo "Installing new LKMs..."
-        unzip -oq "${TMP_PATH}/rp-lkms.zip" -d "${LKMS_PATH}"
-        rm -f "${TMP_PATH}/rp-lkms.zip"
-        echo "Successful!"
+        if unzip -oq "${TMP_PATH}/rp-lkms.zip" -d "${LKMS_PATH}"; then
+          rm -f "${TMP_PATH}/rp-lkms.zip"
+          echo "Successful!"
+        else
+          updateFailed
+        fi
       else
         echo "Error downloading new Version!"
         sleep 5
