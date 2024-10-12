@@ -1015,7 +1015,6 @@ function sysinfo() {
   for ETH in ${ETHX}; do
     COUNT=0
     DRIVER=$(ls -ld /sys/class/net/${ETH}/device/driver 2>/dev/null | awk -F '/' '{print $NF}')
-    NETBUS=$(ethtool -i ${ETH} 2>/dev/null | grep bus-info | cut -d' ' -f2)
     while true; do
       if ! ip link show ${ETH} 2>/dev/null | grep -q 'UP'; then
         TEXT+="\n${DRIVER}: \ZbDOWN\Zn"
@@ -1042,7 +1041,6 @@ function sysinfo() {
       fi
       sleep 1
     done
-    TEXT+="\n\Zb$(lspci -s ${NETBUS} -nnk | awk '{$1=""}1' | awk '{$1=$1};1')\Zn\n"
   done
   # Print Config Informations
   TEXT+="\n\Z4> Arc: ${ARC_VERSION}\Zn"
