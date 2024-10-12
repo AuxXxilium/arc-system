@@ -332,17 +332,19 @@ function arcVersion() {
     PAT_HASH="$(readConfigKey "pathash" "${USER_CONFIG_FILE}")"
     VALID="true"
   fi
-  # Check PAT URL
-  dialog --backtitle "$(backtitle)" --colors --title "DSM Version" \
-    --infobox "Check PAT Data..." 3 40
-  if curl --head -skL -m 10 "${PAT_URL}" | head -n 1 | grep -q 404; then
-    VALID="false"
-    writeConfigKey "paturl" "" "${USER_CONFIG_FILE}"
-    writeConfigKey "pathash" "" "${USER_CONFIG_FILE}"
-  else
-    VALID="true"
-    writeConfigKey "paturl" "${PAT_URL}" "${USER_CONFIG_FILE}"
-    writeConfigKey "pathash" "${PAT_HASH}" "${USER_CONFIG_FILE}"
+  if [ "${ARCMODE}" != "automated" ];  then
+    # Check PAT URL
+    dialog --backtitle "$(backtitle)" --colors --title "DSM Version" \
+      --infobox "Check PAT Data..." 3 40
+    if curl --head -skL -m 10 "${PAT_URL}" | head -n 1 | grep -q 404; then
+      VALID="false"
+      writeConfigKey "paturl" "" "${USER_CONFIG_FILE}"
+      writeConfigKey "pathash" "" "${USER_CONFIG_FILE}"
+    else
+      VALID="true"
+      writeConfigKey "paturl" "${PAT_URL}" "${USER_CONFIG_FILE}"
+      writeConfigKey "pathash" "${PAT_HASH}" "${USER_CONFIG_FILE}"
+    fi
   fi
   # Check PAT Hash
   PAT_URL="$(readConfigKey "paturl" "${USER_CONFIG_FILE}")"
@@ -453,7 +455,7 @@ function arcPatch() {
     resp=$(cat ${TMP_PATH}/resp)
     [ -z "${resp}" ] && return 1
     if [ ${resp} -eq 1 ]; then
-      [ -z "${ARCCONF}" ] && decryptMenu
+      [ -z "${ARCCONF}" ] && decryptMenu || true
       if [ -n "${ARCCONF}" ] && [ "${CONFHASH}" == "${CONFHASHFILE}" ]; then
         # Read Arc Patch from File
         SN="$(generateSerial "${MODEL}" "true" | tr '[:lower:]' '[:upper:]')"
@@ -619,6 +621,8 @@ function arcSummary() {
   PLATFORM="$(readConfigKey "platform" "${USER_CONFIG_FILE}")"
   DT="$(readConfigKey "platforms.${PLATFORM}.dt" "${P_FILE}")"
   KVER="$(readConfigKey "platforms.${PLATFORM}.productvers.\"${PRODUCTVER}\".kver" "${P_FILE}")"
+  PAT_URL="$(readConfigKey "paturl" "${USER_CONFIG_FILE}")"
+  PAT_HASH="$(readConfigKey "pathash" "${USER_CONFIG_FILE}")"
   ARCPATCH="$(readConfigKey "arc.patch" "${USER_CONFIG_FILE}")"
   ADDONSINFO="$(readConfigEntriesArray "addons" "${USER_CONFIG_FILE}")"
   REMAP="$(readConfigKey "arc.remap" "${USER_CONFIG_FILE}")"
@@ -656,6 +660,9 @@ function arcSummary() {
   SUMMARY+="\n>> DSM Model: \Zb${MODEL}\Zn"
   SUMMARY+="\n>> DSM Version: \Zb${PRODUCTVER}\Zn"
   SUMMARY+="\n>> DSM Platform: \Zb${PLATFORM}\Zn"
+  SUMMARY+="\n>> DSM DT: \Zb${DT}\Zn"
+  SUMMARY+="\n>> DSM PAT URL: \Zb${PAT_URL}\Zn"
+  SUMMARY+="\n>> DSM PAT Hash: \Zb${PAT_HASH}\Zn"
   SUMMARY+="\n>> DeviceTree: \Zb${DT}\Zn"
   [ "${MODEL}" == "SA6400" ] && SUMMARY+="\n>> Kernel: \Zb${KERNEL}\Zn"
   SUMMARY+="\n>> Kernel Version: \Zb${KVER}\Zn"
@@ -718,6 +725,8 @@ function make() {
   PRODUCTVER="$(readConfigKey "productver" "${USER_CONFIG_FILE}")"
   DT="$(readConfigKey "platforms.${PLATFORM}.dt" "${P_FILE}")"
   CONFDONE="$(readConfigKey "arc.confdone" "${USER_CONFIG_FILE}")"
+  PAT_URL="$(readConfigKey "paturl" "${USER_CONFIG_FILE}")"
+  PAT_HASH="$(readConfigKey "pathash" "${USER_CONFIG_FILE}")"
   # Check for Arc Patch
   ARCCONF="$(readConfigKey "${MODEL}.serial" "${S_FILE}")"
   CONFHASHFILE="$(sha256sum "${S_FILE}" | awk '{print $1}')"
@@ -728,11 +737,11 @@ function make() {
     deleteConfigKey "addons.sspatch" "${USER_CONFIG_FILE}"
   fi
   # Max Memory for DSM
-  RAMCONFIG="$((${RAMTOTAL} * 1024))"
+  RAMCONFIG="$((${RAMTOTAL} * 1024 * 2))"
   writeConfigKey "synoinfo.mem_max_mb" "${RAMCONFIG}" "${USER_CONFIG_FILE}"
   # Update Patches & LKMs
-  [ $(ls "${LKMS_PATH}" | wc -l) -lt 2 ] && updateLKMs
-  [ $(ls "${PATCH_PATH}" | wc -l) -lt 2 ] && updatePatches
+  updateLKMs
+  updatePatches
   if [ ! -f "${ORI_ZIMAGE_FILE}" ] || [ ! -f "${ORI_RDGZ_FILE}" ]; then
     PAT_URL="$(readConfigKey "paturl" "${USER_CONFIG_FILE}")"
     PAT_HASH="$(readConfigKey "pathash" "${USER_CONFIG_FILE}")"
@@ -773,12 +782,20 @@ function make() {
     # Cleanup
     [ -d "${UNTAR_PAT_PATH}" ] && rm -rf "${UNTAR_PAT_PATH}"
   fi
-  if [ -f "${ORI_ZIMAGE_FILE}" ] && [ -f "${ORI_RDGZ_FILE}" ] && [ "${CONFDONE}" == "true" ]; then
+  if [ -f "${ORI_ZIMAGE_FILE}" ] && [ -f "${ORI_RDGZ_FILE}" ] && [ "${CONFDONE}" == "true" ] && [ -n "${PAT_URL}" ] && [ -n "${PAT_HASH}" ]; then
     (
       livepatch
       sleep 3
     ) 2>&1 | dialog --backtitle "$(backtitle)" --colors --title "Build Loader" \
       --progressbox "Doing the Magic..." 20 70
+  else
+    dialog --backtitle "$(backtitle)" --title "Build Loader" --aspect 18 \
+      --infobox "Configuration issue found.\nCould not build Loader!\nExit." 5 40
+    # Set Build to false
+    writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
+    BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
+    sleep 5
+    return 1
   fi
   if [ -f "${ORI_ZIMAGE_FILE}" ] && [ -f "${ORI_RDGZ_FILE}" ] && [ -f "${MOD_ZIMAGE_FILE}" ] && [ -f "${MOD_RDGZ_FILE}" ]; then
     MODELID=$(echo ${MODEL} | sed 's/d$/D/; s/rp$/RP/; s/rp+/RP+/')
