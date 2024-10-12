@@ -1981,6 +1981,29 @@ function resetDSMNetwork {
 }
 
 ###############################################################################
+# Mount DSM Storage Pools
+function mountDSM() {
+  vgscan >/dev/null 2>&1
+  vgchange -ay >/dev/null 2>&1
+  VOLS="$(lvdisplay 2>/dev/null | grep 'LV Path' | grep -v 'syno_vg_reserved_area' | awk '{print $3}')"
+  if [ -z "${VOLS}" ]; then
+    DIALOG --title "Mount DSM Pool" \
+      --msgbox "No storage pool found!" 0 0
+    return
+  fi
+  for I in ${VOLS}; do
+    NAME="$(echo "${I}" | awk -F'/' '{print $3"_"$4}')"
+    mkdir -p "/mnt/DSM/${NAME}"
+    umount "${I}" 2>/dev/null
+    mount ${I} "/mnt/DSM/${NAME}" -o ro
+  done
+  MSG="All storage pools are mounted under /mnt/DSM. Please check them yourself via shell/DUFS."
+  DIALOG --title "Mount DSM Pool" \
+    --msgbox "${MSG}" 0 0
+  return
+}
+
+###############################################################################
 # CPU Governor Menu
 function governorMenu () {
   governorSelection
