@@ -582,7 +582,7 @@ function arcSettings() {
     deleteConfigKey "modules.mmc_block" "${USER_CONFIG_FILE}"
     deleteConfigKey "modules.mmc_core" "${USER_CONFIG_FILE}"
   fi
-  if [ -n "${PLATFORM}" ]&& [ -n "${MODEL}" ] && [ -n "${KVER}" ] && [ -n "${PAT_URL}" ]&& [ -n "${PAT_HASH}" ]; then
+  if [ -n "${PLATFORM}" ] && [ -n "${MODEL}" ] && [ -n "${KVER}" ] && [ -n "${PAT_URL}" ] && [ -n "${PAT_HASH}" ]; then
     # Config is done
     writeConfigKey "arc.confdone" "true" "${USER_CONFIG_FILE}"
     CONFDONE="$(readConfigKey "arc.confdone" "${USER_CONFIG_FILE}")"
