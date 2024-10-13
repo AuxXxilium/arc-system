@@ -838,55 +838,6 @@ function arcFinish() {
 }
 
 ###############################################################################
-# Loading Update Mode
-function arcUpdate() {
-  KERNEL="$(readConfigKey "kernel" "${USER_CONFIG_FILE}")"
-  BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
-  FAILED="false"
-  # Automatic Update
-  updateSystem
-  [ $? -ne 0 ] && FAILED="true"
-  updateAddons
-  [ $? -ne 0 ] && FAILED="true"
-  updateModules
-  [ $? -ne 0 ] && FAILED="true"
-  updateLKMs
-  [ $? -ne 0 ] && FAILED="true"
-  updatePatches
-  [ $? -ne 0 ] && FAILED="true"
-  if [ "${KERNEL}" == "custom" ]; then
-    updateCustom
-    [ $? -ne 0 ] && FAILED="true"
-  fi
-  if [ "${FAILED}" == "true" ] && [ "${UPDATEMODE}" == "true" ]; then
-    dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
-      --infobox "Update failed!\nTry again later." 0 0
-    sleep 3
-    exec reboot
-  elif [ "${FAILED}" == "true" ]; then
-    dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
-      --infobox "Update failed!\nTry again later." 0 0
-    sleep 3
-  elif [ "${FAILED}" == "false" ] && [ "${UPDATEMODE}" == "true" ]; then
-    # Ask for Boot
-    dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
-      --infobox "Update successful! -> Building now..." 0 0
-    sleep 3
-    writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
-    BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
-    make
-  elif [ "${FAILED}" == "false" ]; then
-    dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
-      --infobox "Update successful!" 0 0
-    writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
-    BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
-    sleep 3
-    clear
-    arc.sh
-  fi
-}
-
-###############################################################################
 # Calls boot.sh to boot into DSM Reinstall Mode
 function juniorboot() {
   BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
@@ -923,6 +874,7 @@ function boot() {
 # Check for Arc Mode
 if [ "${ARCMODE}" == "update" ]; then
   UPDATEMODE="true"
+  updateLoader
   arcUpdate
 elif [ "${ARCMODE}" == "automated" ]; then
   # Check for Custom Build

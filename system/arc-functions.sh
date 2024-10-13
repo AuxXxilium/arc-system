@@ -822,64 +822,13 @@ function updateMenu() {
   while true; do
     dialog --backtitle "$(backtitle)" --colors --cancel-label "Exit" \
       --menu "Choose an Option" 0 0 0 \
-      0 "Buildroot Branch: \Z1${ARCBRANCH}\Zn" \
-      1 "Upgrade Base Image \Z1(reflash)\Zn" \
-      2 "Update Base Image \Z1(no reflash)\Zn" \
-      3 "Inplace-Update Dependencies" \
-      4 "Update Arc Patch" \
+      1 "Update Base Image \Z1(no reflash)\Zn" \
+      2 "Inplace-Update System/Dependencies" \
+      3 "Update Arc Patch" \
       2>"${TMP_PATH}/resp"
     [ $? -ne 0 ] && break
     case "$(cat ${TMP_PATH}/resp)" in
-        0)
-        # Ask for Arc Branch
-        ARCBRANCH="$(readConfigKey "arc.branch" "${USER_CONFIG_FILE}")"
-        dialog --clear --backtitle "$(backtitle)" --title "Switch Buildroot" \
-          --menu "Current: ${ARCBRANCH} -> Which Branch?" 7 50 0 \
-          1 "Stable Buildroot" \
-          2 "Next Buildroot (latest)" \
-        2>"${TMP_PATH}/opts"
-        [ $? -ne 0 ] && break
-        opts=$(cat ${TMP_PATH}/opts)
-        if [ ${opts} -eq 1 ]; then
-          writeConfigKey "arc.branch" "stable" "${USER_CONFIG_FILE}"
-        elif [ ${opts} -eq 2 ]; then
-          writeConfigKey "arc.branch" "next" "${USER_CONFIG_FILE}"
-        fi
-        ARCBRANCH="$(readConfigKey "arc.branch" "${USER_CONFIG_FILE}")"
-        echo "${ARCBRANCH}" >"${PART1_PATH}/ARC-BRANCH"
-        dialog --backtitle "$(backtitle)" --title "Switch Buildroot" --aspect 18 \
-          --msgbox "Using ${ARCBRANCH} Buildroot, now.\nUpdate the Loader to apply the changes!" 7 50
-        writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
-        BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
-        ;;
       1)
-        # Ask for Tag
-        TAG=""
-        NEWVER="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
-        OLDVER="$(cat ${PART1_PATH}/ARC-BASE-VERSION)"
-        dialog --clear --backtitle "$(backtitle)" --title "Upgrade Base Image" \
-          --menu "Current: ${OLDVER} -> Which Version?" 7 50 0 \
-          1 "Latest ${NEWVER}" \
-          2 "Select Version" \
-        2>"${TMP_PATH}/opts"
-        [ $? -ne 0 ] && break
-        opts=$(cat ${TMP_PATH}/opts)
-        if [ ${opts} -eq 1 ]; then
-          TAG=""
-        elif [ ${opts} -eq 2 ]; then
-          dialog --backtitle "$(backtitle)" --title "Upgrade Base Image" \
-          --inputbox "Type the Version!" 0 0 \
-          2>"${TMP_PATH}/input"
-          TAG=$(cat "${TMP_PATH}/input")
-          [ -z "${TAG}" ] && return 1
-        fi
-        if upgradeLoader "${TAG}"; then
-          writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
-          BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
-          exec reboot && exit 0
-        fi
-        ;;
-      2)
         # Ask for Tag
         TAG=""
         NEWVER="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
@@ -906,10 +855,10 @@ function updateMenu() {
           exec reboot && exit 0
         fi
         ;;
-      3)
+      2)
         arcUpdate
         ;;
-      4)
+      3)
         decryptMenu
         ;;
     esac
@@ -945,9 +894,8 @@ function networkMenu() {
 ###############################################################################
 # Shows Systeminfo to user
 function sysinfo() {
-  # Check if machine has EFI
-  [ -d /sys/firmware/efi ] && BOOTSYS="UEFI" || BOOTSYS="BIOS"
   # Get System Informations
+  [ -d /sys/firmware/efi ] && BOOTSYS="UEFI" || BOOTSYS="BIOS"
   CPU=$(echo $(cat /proc/cpuinfo 2>/dev/null | grep 'model name' | uniq | awk -F':' '{print $2}'))
   SECURE=$(dmesg 2>/dev/null | grep -i "Secure Boot" | awk -F'] ' '{print $2}')
   VENDOR=$(dmesg 2>/dev/null | grep -i "DMI:" | sed 's/\[.*\] DMI: //i')

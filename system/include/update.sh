@@ -1,68 +1,6 @@
 ###############################################################################
-# Upgrade Loader
-function upgradeLoader () {
-  local ARCBRANCH="$(readConfigKey "arc.branch" "${USER_CONFIG_FILE}")"
-  rm -f "${TMP_PATH}/arc.img.zip"
-  if [ -z "${1}" ]; then
-    # Check for new Version
-    idx=0
-    while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
-      local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
-      if [ -n "${TAG}" ]; then
-        break
-      fi
-      sleep 3
-      idx=$((${idx} + 1))
-    done
-  else
-    local TAG="${1}"
-  fi
-  if [ -n "${TAG}" ]; then
-    (
-      # Download update file
-      echo "Downloading ${TAG}"
-      local URL="https://github.com/AuxXxilium/arc/releases/download/${TAG}/arc-${TAG}-${ARCBRANCH}.img.zip"
-      curl -#kL "${URL}" -o "${TMP_PATH}/arc.img.zip" 2>&1 | while IFS= read -r -n1 char; do
-        [[ $char =~ [0-9] ]] && keep=1 ;
-        [[ $char == % ]] && echo "$progress%" && progress="" && keep=0 ;
-        [[ $keep == 1 ]] && progress="$progress$char" ;
-      done
-      if [ -f "${TMP_PATH}/arc.img.zip" ]; then
-        echo "Downloading Base Image successful!"
-      else
-        updateFailed
-      fi
-      unzip -oq "${TMP_PATH}/arc.img.zip" -d "${TMP_PATH}"
-      rm -f "${TMP_PATH}/arc.img.zip" >/dev/null
-      echo "Flashing Base Image..."
-      # Process complete update
-      umount "${PART1_PATH}" "${PART2_PATH}" "${PART3_PATH}"
-      if [ "${ARCBRANCH}" != "stable" ]; then
-        if dd if="${TMP_PATH}/arc-${ARCBRANCH}.img" of=$(blkid | grep 'LABEL="ARC3"' | cut -d3 -f1) bs=1M conv=fsync; then
-          rm -f "${TMP_PATH}/arc-${ARCBRANCH}.img" >/dev/null
-        else
-          updateFailed
-        fi
-      else
-        if dd if="${TMP_PATH}/arc.img" of=$(blkid | grep 'LABEL="ARC3"' | cut -d3 -f1) bs=1M conv=fsync; then
-          rm -f "${TMP_PATH}/arc.img" >/dev/null
-        else
-          updateFailed
-        fi
-      fi
-      echo "Successful! -> Rebooting..."
-      deleteConfigKey "arc.confhash" "${USER_CONFIG_FILE}"
-      sleep 2
-    ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Upgrade Loader" \
-      --progressbox "Upgrading Loader..." 20 70
-  fi
-  return 0
-}
-
-###############################################################################
 # Update Loader
 function updateLoader() {
-  local ARCBRANCH="$(readConfigKey "arc.branch" "${USER_CONFIG_FILE}")"
   # Check for new Version
   idx=0
   while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
@@ -77,7 +15,7 @@ function updateLoader() {
     (
       # Download update file
       echo "Downloading ${TAG}"
-      local URL="https://github.com/AuxXxilium/arc/releases/download/${TAG}/update-${TAG}-${ARCBRANCH}.zip"
+      local URL="https://github.com/AuxXxilium/arc/releases/download/${TAG}/update-${TAG}.zip"
       curl -#kL "${URL}" -o "${TMP_PATH}/update.zip" 2>&1 | while IFS= read -r -n1 char; do
         [[ $char =~ [0-9] ]] && keep=1 ;
         [[ $char == % ]] && echo "$progress%" && progress="" && keep=0 ;
@@ -89,7 +27,7 @@ function updateLoader() {
           rm -f "${TMP_PATH}/update.zip" >/dev/null
           echo "${TAG}" > "${PART1_PATH}/ARC-BASE-VERSION"
           # Process complete update
-          echo "Successful! -> Rebooting..."
+          echo "Successful!"
           deleteConfigKey "arc.confhash" "${USER_CONFIG_FILE}"
           sleep 2
         else
@@ -99,7 +37,7 @@ function updateLoader() {
         updateFailed
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "System" \
-      --progressbox "Installing System Update..." 20 70
+      --progressbox "Installing Base Image..." 20 70
   fi
   return 0
 }
@@ -446,6 +384,68 @@ function updateLKMs() {
       --progressbox "Installing LKMs..." 20 70
   fi
   return 0
+}
+
+###############################################################################
+# Loading Update Mode
+function arcUpdate() {
+  KERNEL="$(readConfigKey "kernel" "${USER_CONFIG_FILE}")"
+  BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
+  FAILED="false"
+  # Automatic Update
+  if [ "${UPDATEMODE}" == "true" ]; then
+    dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
+      --infobox "Updating Dependencies..." 0 0
+    sleep 3
+  else
+    NEWVER="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
+    OLDVER="$(cat ${PART1_PATH}/ARC-BASE-VERSION)"
+    if [ "${NEWVER}" != "${OLDVER}" ]; then
+      dialog --backtitle "$(backtitle)" --title "Base Image Update" \
+        --yesno "Update Base Image first? ${OLDVER} -> ${NEWVER}" 7 60
+      [ $? -eq 0 ] && updateLoader "${NEWVER}"
+    fi
+  fi
+  updateSystem
+  [ $? -ne 0 ] && FAILED="true"
+  updateAddons
+  [ $? -ne 0 ] && FAILED="true"
+  updateModules
+  [ $? -ne 0 ] && FAILED="true"
+  updateLKMs
+  [ $? -ne 0 ] && FAILED="true"
+  updatePatches
+  [ $? -ne 0 ] && FAILED="true"
+  if [ "${KERNEL}" == "custom" ]; then
+    updateCustom
+    [ $? -ne 0 ] && FAILED="true"
+  fi
+  if [ "${FAILED}" == "true" ] && [ "${UPDATEMODE}" == "true" ]; then
+    dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
+      --infobox "Update failed!\nTry again later." 0 0
+    sleep 3
+    exec reboot
+  elif [ "${FAILED}" == "true" ]; then
+    dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
+      --infobox "Update failed!\nTry again later." 0 0
+    sleep 3
+  elif [ "${FAILED}" == "false" ] && [ "${UPDATEMODE}" == "true" ]; then
+    # Ask for Boot
+    dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
+      --infobox "Update successful! -> Building now..." 0 0
+    sleep 3
+    writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
+    BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
+    make
+  elif [ "${FAILED}" == "false" ]; then
+    dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
+      --infobox "Update successful!" 0 0
+    writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
+    BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
+    sleep 3
+    clear
+    arc.sh
+  fi
 }
 
 ###############################################################################
