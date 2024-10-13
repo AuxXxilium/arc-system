@@ -60,7 +60,7 @@ function updateSystem() {
         [[ $keep == 1 ]] && progress="$progress$char" ;
       done
       if [ -f "${TMP_PATH}/system.zip" ]; then
-        rm -rf "${SYSTEM_PATH}"
+        rm -f "${SYSTEM_PATH}"/*
         mkdir -p "${SYSTEM_PATH}"
         echo "Installing new System..."
         if unzip -oq "${TMP_PATH}/system.zip" -d "${PART3_PATH}"; then
@@ -415,14 +415,12 @@ function arcUpdate() {
     sleep 3
     writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
     BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
-    mount --bind "${SYSTEM_PATH}" "/opt/arc"
     make
   elif [ "${FAILED}" == "false" ]; then
     dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
       --infobox "Update successful!" 0 0
     writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
     BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
-    mount --bind "${SYSTEM_PATH}" "/opt/arc"
     sleep 3
     clear
     arc.sh
