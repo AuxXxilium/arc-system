@@ -40,7 +40,6 @@ jobs:
           if [ -n "${VERSION}" ]; then
             # Modify Source File
             echo "${VERSION}" >VERSION
-            sed 's/^ARC_VERSION=.*/ARC_VERSION="'${VERSION}'"/' -i system/include/consts.sh
           fi
 
       # Zip image

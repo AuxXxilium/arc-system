@@ -24,9 +24,7 @@ function updateLoader() {
       done
       if [ -f "${TMP_PATH}/update.zip" ]; then
         echo -e "Downloading Base Image successful!\nUpdating Base Image..."
-        if unzip -oq "${TMP_PATH}/update.zip" -d "${TMP_PATH}"; then
-          cp -f "${TMP_PATH}/bzImage-arc" "${PART3_PATH}/bzImage-arc"
-          cp -f "${TMP_PATH}/initrd-arc" "${PART3_PATH}/initrd-arc"
+        if unzip -oq "${TMP_PATH}/update.zip" -d "${PART3_PATH}"; then
           echo "${TAG}" > "${PART1_PATH}/ARC-BASE-VERSION"
           echo "Successful!"
           sleep 2

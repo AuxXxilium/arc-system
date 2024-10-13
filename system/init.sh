@@ -13,16 +13,14 @@ BUS=$(getBus "${LOADER_DISK}")
 # Check if machine has EFI
 [ -d /sys/firmware/efi ] && EFI=1 || EFI=0
 
-if [ -f "${PART1_PATH}/ARC-BRANCH" ]; then
-  ARC_BRANCH=$(cat "${PART1_PATH}/ARC-BRANCH")
-fi
-
 # Print Title centralized
 clear
 COLUMNS=${COLUMNS:-50}
 BANNER="$(figlet -c -w "$(((${COLUMNS})))" "Arc Loader")"
-TITLE="Version:"
-TITLE+=" ${ARC_TITLE} | ${ARC_BRANCH}"
+TITLE="Base:"
+TITLE+=" ${ARC_BASE_VERSION}"
+[ -n "${ARC_VERSION}" ] && TITLE+=" | System: ${ARC_VERSION}"
+[ -n "${ARC_BRANCH}" ] && TITLE+=" | Branch: ${ARC_BRANCH}"
 printf "\033[1;30m%*s\n" ${COLUMNS} ""
 printf "\033[1;30m%*s\033[A\n" ${COLUMNS} ""
 printf "\033[1;34m%*s\033[0m\n" ${COLUMNS} "${BANNER}"
@@ -208,7 +206,7 @@ echo
 # Check for Base Version
 ARCAUTOUPDATE="$(readConfigKey "arc.autoupdate" "${USER_CONFIG_FILE}")"
 if [ "${ARCAUTOUPDATE}" == "true" ] && [ "${ARCMODE}" != "automated"]; then
-  if echo "${ARC_BASE_TITLE}" | grep -v "dev"; then
+  if echo "${ARC_BASE_VERSION}" | grep -v "dev"; then
     TAG="$(curl -m 5 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
     [ -z "${TAG}" ] && TAG="${ARC_BASE_VERSION}"
     if [ "${TAG}" != "${ARC_BASE_VERSION}" ]; then
@@ -230,9 +228,11 @@ if [[ -z "${IPCON}" || "${ARCMODE}" == "automated" ]]; then
   echo -e "\033[1;34mUsing preloaded Arc System Files...\033[0m"
 elif [ -n "${IPCON}" ]; then
   if echo "${ARC_BASE_TITLE}" | grep -q "dev"; then
-    echo -e "\033[1;34mDownloading Arc System Development Files...\033[0m"
-    getArcSystem "dev"
+    echo -e "\033[1;34mArc System Development...\033[0m"
   elif [ "${ARCAUTOUPDATE}" == "true" ]; then
+    TAG="$(curl -m 5 -skL "https://api.github.com/repos/AuxXxilium/arc-system/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
+    [ -z "${TAG}" ] && TAG="${ARC_VERSION}"
+    if [ "${TAG}" != "${ARC_VERSION}" ]; then
     echo -e "\033[1;34mDownloading Arc System Files...\033[0m"
     getArcSystem
   fi

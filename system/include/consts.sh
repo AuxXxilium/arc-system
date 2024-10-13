@@ -1,11 +1,19 @@
-ARC_VERSION="24.1.1"
-ARC_TITLE="Arc ${ARC_VERSION}"
-
 # Define paths
 PART1_PATH="/mnt/p1"
 PART2_PATH="/mnt/p2"
 PART3_PATH="/mnt/p3"
 TMP_PATH="/tmp"
+
+if [ -f "${PART1_PATH}/ARC-BRANCH" ]; then
+  ARC_BRANCH=$(cat "${PART1_PATH}/ARC-BRANCH")
+fi
+if [ -f "${PART1_PATH}/ARC-BASE-VERSION" ]; then
+  ARC_BASE_VERSION=$(cat "${PART1_PATH}/ARC-BASE-VERSION")
+fi
+if [ -f "${PART1_PATH}/ARC-VERSION" ]; then
+  ARC_VERSION=$(cat "${PART1_PATH}/ARC-VERSION")
+fi
+ARC_TITLE="Arc ${ARC_VERSION}"
 
 RAMDISK_PATH="${TMP_PATH}/ramdisk"
 LOG_FILE="${TMP_PATH}/log.txt"
