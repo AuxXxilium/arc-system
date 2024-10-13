@@ -424,12 +424,14 @@ function arcUpdate() {
     sleep 3
     writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
     BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
+    mount --bind "${SYSTEM_PATH}" "/opt/arc"
     make
   elif [ "${FAILED}" == "false" ]; then
     dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
       --infobox "Update successful!" 0 0
     writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
     BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
+    mount --bind "${SYSTEM_PATH}" "/opt/arc"
     sleep 3
     clear
     arc.sh
