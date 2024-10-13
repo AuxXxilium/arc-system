@@ -413,9 +413,7 @@ function arcUpdate() {
     dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
       --infobox "Update successful! -> Building now..." 0 0
     sleep 3
-    writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
-    BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
-    make
+    rebootTo "automated"
   elif [ "${FAILED}" == "false" ]; then
     dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
       --infobox "Update successful!" 0 0

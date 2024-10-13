@@ -817,7 +817,6 @@ function backupMenu() {
 ###############################################################################
 # Shows update menu to user
 function updateMenu() {
-  ARCBRANCH="$(readConfigKey "arc.branch" "${USER_CONFIG_FILE}")"
   NEXT="1"
   while true; do
     dialog --backtitle "$(backtitle)" --colors --cancel-label "Exit" \
@@ -901,7 +900,7 @@ function sysinfo() {
   VENDOR=$(dmesg 2>/dev/null | grep -i "DMI:" | sed 's/\[.*\] DMI: //i')
   ETHX="$(ls /sys/class/net 2>/dev/null | grep eth)"
   ETHN="$(echo ${ETHX} | wc -w)"
-  ARCBRANCH="$(readConfigKey "arc.branch" "${USER_CONFIG_FILE}")"
+  ARC_BRANCH="$(readConfigKey "arc.branch" "${USER_CONFIG_FILE}")"
   CONFDONE="$(readConfigKey "arc.confdone" "${USER_CONFIG_FILE}")"
   BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
   if [ "${CONFDONE}" == "true" ]; then
@@ -993,7 +992,7 @@ function sysinfo() {
   # Print Config Informations
   TEXT+="\n\Z4> Arc: ${ARC_VERSION}\Zn"
   TEXT+="\n  Base: \Zb${ARC_BASE_VERSION}\Zn"
-  TEXT+="\n  Branch: \Zb${ARCBRANCH}\Zn"
+  TEXT+="\n  Branch: \Zb${ARC_BRANCH}\Zn"
   TEXT+="\n  Config | Build: \Zb${CONFDONE} | ${BUILDDONE}\Zn"
   TEXT+="\n  Config Version: \Zb${CONFIGVER}\Zn"
   if [ "${CONFDONE}" == "true" ]; then
