@@ -60,7 +60,6 @@ function updateSystem() {
         [[ $keep == 1 ]] && progress="$progress$char" ;
       done
       if [ -f "${TMP_PATH}/system.zip" ]; then
-        rm -f "${SYSTEM_PATH}"/*
         mkdir -p "${SYSTEM_PATH}"
         echo "Installing new System..."
         if unzip -oq "${TMP_PATH}/system.zip" -d "${PART3_PATH}"; then
@@ -375,11 +374,14 @@ function arcUpdate() {
   KERNEL="$(readConfigKey "kernel" "${USER_CONFIG_FILE}")"
   BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
   FAILED="false"
+  FORCEREBOOT="false"
   NEWVER="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
   OLDVER="$(cat ${PART1_PATH}/ARC-BASE-VERSION)"
   if [ "${NEWVER}" != "${OLDVER}" ]; then
-    dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
-    --infobox "Updating Base Image..." 0 0
+    dialog --backtitle "$(backtitle)" --title "Update Base Image" --aspect 18 \
+    --infobox "Updating Base Image... ${OLDVER} -> ${NEWVER}" 0 0
+    sleep 3
+    FORCEREBOOT="true"
     updateLoader "${NEWVER}"
     [ $? -ne 0 ] && FAILED="true"
   fi
@@ -421,7 +423,7 @@ function arcUpdate() {
     BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
     sleep 3
     clear
-    arc.sh
+    [ "${FORCEREBOOT}" == "false" ] && arc.sh || rebootTo "config"
   fi
 }
 
