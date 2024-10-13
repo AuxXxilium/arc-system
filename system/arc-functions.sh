@@ -2076,17 +2076,3 @@ function dtsMenu() {
     esac
   done
 }
-
-###############################################################################
-# reset Arc Patch
-function resetArcPatch() {
-  writeConfigKey "arc.key" "" "${USER_CONFIG_FILE}"
-  ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
-  writeConfigKey "arc.patch" "false" "${USER_CONFIG_FILE}"
-  ARCPATCH="$(readConfigKey "arc.patch" "${USER_CONFIG_FILE}")"
-  writeConfigKey "arc.confdone" "false" "${USER_CONFIG_FILE}"
-  CONFDONE="$(readConfigKey "arc.confdone" "${USER_CONFIG_FILE}")"
-  writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
-  BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
-  return
-}

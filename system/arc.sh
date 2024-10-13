@@ -35,6 +35,7 @@ fi
 ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
 ARCPATCH="$(readConfigKey "arc.patch" "${USER_CONFIG_FILE}")"
 ARCCONF="$(readConfigKey "${MODEL}.serial" "${S_FILE}")"
+ARCAUTOUPDATE="$(readConfigKey "arc.autoupdate" "${USER_CONFIG_FILE}")"
 BOOTIPWAIT="$(readConfigKey "bootipwait" "${USER_CONFIG_FILE}")"
 DIRECTBOOT="$(readConfigKey "directboot" "${USER_CONFIG_FILE}")"
 EMMCBOOT="$(readConfigKey "emmcboot" "${USER_CONFIG_FILE}")"
@@ -984,6 +985,7 @@ else
       echo "= \"\Z4========= Loader =========\Zn \" "                                         >>"${TMP_PATH}/menu"
       echo "= \"\Z1=== Edit with caution! ===\Zn \" "                                         >>"${TMP_PATH}/menu"
       echo "D \"StaticIP for Loader/DSM\" "                                                   >>"${TMP_PATH}/menu"
+      echo "c \"Autoupdate Base/System: \Z4${ARCAUTOUPDATE}\Zn \" "                           >>"${TMP_PATH}/menu"
       echo "W \"RD Compression: \Z4${RD_COMPRESSED}\Zn \" "                                   >>"${TMP_PATH}/menu"
       echo "X \"Sata DOM: \Z4${SATADOM}\Zn \" "                                               >>"${TMP_PATH}/menu"
       echo "u \"LKM Version: \Z4${LKM}\Zn \" "                                                >>"${TMP_PATH}/menu"
@@ -1021,14 +1023,13 @@ else
         ;;
       b) addonMenu; NEXT="b" ;;
       d) modulesMenu; NEXT="d" ;;
-      g) governorMenu; NEXT="g" ;;
       e) ONLYVERSION="true" && arcVersion; NEXT="e" ;;
       p) ONLYPATCH="true" && arcPatch; NEXT="p" ;;
       S) storageMenu; NEXT="S" ;;
       o) dtsMenu; NEXT="o" ;;
+      g) governorMenu; NEXT="g" ;;
       P) storagepanelMenu; NEXT="P" ;;
       Q) sequentialIOMenu; NEXT="Q" ;;
-      r) resetArcPatch; NEXT="r" ;;
       # Boot Section
       6) [ "${BOOTOPTS}" == "true" ] && BOOTOPTS='false' || BOOTOPTS='true'
         BOOTOPTS="${BOOTOPTS}"
@@ -1037,6 +1038,24 @@ else
       m) [ "${KERNELLOAD}" == "kexec" ] && KERNELLOAD='power' || KERNELLOAD='kexec'
         writeConfigKey "kernelload" "${KERNELLOAD}" "${USER_CONFIG_FILE}"
         NEXT="m"
+        ;;
+      E) [ "${EMMCBOOT}" == "true" ] && EMMCBOOT='false' || EMMCBOOT='true'
+        if [ "${EMMCBOOT}" == "false" ]; then
+          writeConfigKey "emmcboot" "false" "${USER_CONFIG_FILE}"
+          deleteConfigKey "synoinfo.disk_swap" "${USER_CONFIG_FILE}"
+          deleteConfigKey "synoinfo.supportraid" "${USER_CONFIG_FILE}"
+          deleteConfigKey "synoinfo.support_emmc_boot" "${USER_CONFIG_FILE}"
+          deleteConfigKey "synoinfo.support_install_only_dev" "${USER_CONFIG_FILE}"
+        elif [ "${EMMCBOOT}" == "true" ]; then
+          writeConfigKey "emmcboot" "true" "${USER_CONFIG_FILE}"
+          writeConfigKey "synoinfo.disk_swap" "no" "${USER_CONFIG_FILE}"
+          writeConfigKey "synoinfo.supportraid" "no" "${USER_CONFIG_FILE}"
+          writeConfigKey "synoinfo.support_emmc_boot" "yes" "${USER_CONFIG_FILE}"
+          writeConfigKey "synoinfo.support_install_only_dev" "yes" "${USER_CONFIG_FILE}"
+        fi
+        writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
+        BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
+        NEXT="E"
         ;;
       i) bootipwaittime; NEXT="i" ;;
       q) [ "${DIRECTBOOT}" == "false" ] && DIRECTBOOT='true' || DIRECTBOOT='false'
@@ -1051,10 +1070,10 @@ else
         ;;
       j) cmdlineMenu; NEXT="j" ;;
       k) synoinfoMenu; NEXT="k" ;;
+      l) editUserConfig; NEXT="l" ;;
       s) downgradeMenu; NEXT="s" ;;
       t) resetPassword; NEXT="t" ;;
       N) addNewDSMUser; NEXT="N" ;;
-      D) staticIPMenu; NEXT="D" ;;
       J) resetDSMNetwork; NEXT="J" ;;
       M) mountDSM; NEXT="M" ;;
       K) [ "${KERNEL}" == "official" ] && KERNEL='custom' || KERNEL='official'
@@ -1104,23 +1123,16 @@ else
         BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
         NEXT="O"
         ;;
-      E) [ "${EMMCBOOT}" == "true" ] && EMMCBOOT='false' || EMMCBOOT='true'
-        if [ "${EMMCBOOT}" == "false" ]; then
-          writeConfigKey "emmcboot" "false" "${USER_CONFIG_FILE}"
-          deleteConfigKey "synoinfo.disk_swap" "${USER_CONFIG_FILE}"
-          deleteConfigKey "synoinfo.supportraid" "${USER_CONFIG_FILE}"
-          deleteConfigKey "synoinfo.support_emmc_boot" "${USER_CONFIG_FILE}"
-          deleteConfigKey "synoinfo.support_install_only_dev" "${USER_CONFIG_FILE}"
-        elif [ "${EMMCBOOT}" == "true" ]; then
-          writeConfigKey "emmcboot" "true" "${USER_CONFIG_FILE}"
-          writeConfigKey "synoinfo.disk_swap" "no" "${USER_CONFIG_FILE}"
-          writeConfigKey "synoinfo.supportraid" "no" "${USER_CONFIG_FILE}"
-          writeConfigKey "synoinfo.support_emmc_boot" "yes" "${USER_CONFIG_FILE}"
-          writeConfigKey "synoinfo.support_install_only_dev" "yes" "${USER_CONFIG_FILE}"
-        fi
-        writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
-        BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
-        NEXT="E"
+      B) getbackup; NEXT="B" ;;
+      # Loader Section
+      8) [ "${LOADEROPTS}" == "true" ] && LOADEROPTS='false' || LOADEROPTS='true'
+        LOADEROPTS="${LOADEROPTS}"
+        NEXT="8"
+        ;;
+      D) staticIPMenu; NEXT="D" ;;
+      c) [ "${ARCAUTOUPDATE}" == "false" ] && ARCAUTOUPDATE='true' || ARCAUTOUPDATE='false'
+        writeConfigKey "arc.autoupdate" "${ARCAUTOUPDATE}" "${USER_CONFIG_FILE}"
+        NEXT="c"
         ;;
       W) [ "${RD_COMPRESSED}" == "true" ] && RD_COMPRESSED='false' || RD_COMPRESSED='true'
         writeConfigKey "rd-compressed" "${RD_COMPRESSED}" "${USER_CONFIG_FILE}"
@@ -1135,21 +1147,14 @@ else
         BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
         NEXT="u"
         ;;
-      # Loader Section
-      8) [ "${LOADEROPTS}" == "true" ] && LOADEROPTS='false' || LOADEROPTS='true'
-        LOADEROPTS="${LOADEROPTS}"
-        NEXT="8"
-        ;;
-      l) editUserConfig; NEXT="l" ;;
-      w) resetLoader; NEXT="w" ;;
-      n) editGrubCfg; NEXT="n" ;;
-      B) getbackup; NEXT="B" ;;
       L) greplogs; NEXT="L" ;;
+      w) resetLoader; NEXT="w" ;;
       C) cloneLoader; NEXT="C" ;;
+      n) editGrubCfg; NEXT="n" ;;
+      y) keymapMenu; NEXT="y" ;;
       F) formatDisks; NEXT="F" ;;
       # Misc Settings
       x) backupMenu; NEXT="x" ;;
-      y) keymapMenu; NEXT="y" ;;
       z) updateMenu; NEXT="z" ;;
       I) rebootMenu; NEXT="I" ;;
       V) credits; NEXT="V" ;;
