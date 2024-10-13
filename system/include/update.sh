@@ -457,3 +457,72 @@ function updateFaileddialog() {
     return 1
   fi
 }
+
+###############################################################################
+# Arc Base File download called by init.sh
+function getArcBase() {
+  idx=0
+  while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
+    local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
+    if [ -n "${TAG}" ]; then
+      break
+    fi
+    sleep 3
+    idx=$((${idx} + 1))
+  done
+  if [ -n "${TAG}" ]; then
+    (
+      echo "Downloading ${TAG}"
+      local URL="https://github.com/AuxXxilium/arc/releases/download/${TAG}/update-${TAG}.zip"
+      curl -#kL "${URL}" -o "${TMP_PATH}/update.zip" 2>&1 | while IFS= read -r -n1 char; do
+        [[ $char =~ [0-9] ]] && keep=1 ;
+        [[ $char == % ]] && echo "$progress%" && progress="" && keep=0 ;
+        [[ $keep == 1 ]] && progress="$progress$char" ;
+      done
+      if [ -f "${TMP_PATH}/update.zip" ]; then
+        echo -e "Downloading Base Image successful!\nUpdating Base Image..."
+        if unzip -oq "${TMP_PATH}/update.zip" -d "${PART3_PATH}"; then
+          rm -f "${TMP_PATH}/update.zip" >/dev/null
+          echo "${TAG}" > "${PART1_PATH}/ARC-BASE-VERSION"
+          echo "Successful! -> Rebooting..."
+          sleep 2
+        else
+          echo "Failed to unpack Base Image."
+          return 1
+        fi
+      else
+        echo "Failed to download Base Image."
+        return 1
+      fi
+    ) 2>&1 | dialog --backtitle "$(backtitle)" --title "System" \
+      --progressbox "Installing Base Image..." 20 70
+  fi
+  return 0
+}
+
+###############################################################################
+# Arc System Files download called by init.sh
+function getArcSystem() {
+  local CACHE_FILE="/tmp/system.zip"
+  rm -f "${CACHE_FILE}"
+  if [ -n "${1}" ]; then
+    local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-system/releases" | jq -r ".[].tag_name" | grep "dev" | sort -rV | head -1)"
+  else
+    local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-system/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
+  fi
+  if curl -skL "https://github.com/AuxXxilium/arc-system/releases/download/${TAG}/system-${TAG}.zip" -o "${CACHE_FILE}"; then
+    mkdir -p "${SYSTEM_PATH}"
+    if unzip -oq "${CACHE_FILE}" -d "${PART3_PATH}" >/dev/null 2>&1; then
+      echo "${TAG}" >"${PART1_PATH}/ARC-VERSION"
+      [ -f "${SYSTEM_PATH}/grub.cfg" ] && cp -f "${SYSTEM_PATH}/grub.cfg" "${USER_GRUB_CONFIG}"
+      rm -f "${CACHE_FILE}"
+      return 0
+    else
+      echo -e "Failed to unpack System Image."
+      return 1
+    fi
+  else
+    echo -e "Failed to download Arc System Files. Check your network connection.\nYou can restart download with 'init.sh' command."
+    return 1
+  fi
+}
