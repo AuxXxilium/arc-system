@@ -1,7 +1,6 @@
 ###############################################################################
 # Update Loader
 function updateLoader() {
-  # Check for new Version
   idx=0
   while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
     local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
@@ -13,7 +12,6 @@ function updateLoader() {
   done
   if [ -n "${TAG}" ]; then
     (
-      # Download update file
       echo "Downloading ${TAG}"
       local URL="https://github.com/AuxXxilium/arc/releases/download/${TAG}/update-${TAG}.zip"
       curl -#kL "${URL}" -o "${TMP_PATH}/update.zip" 2>&1 | while IFS= read -r -n1 char; do
@@ -26,9 +24,7 @@ function updateLoader() {
         if unzip -oq "${TMP_PATH}/update.zip" -d "${PART3_PATH}"; then
           rm -f "${TMP_PATH}/update.zip" >/dev/null
           echo "${TAG}" > "${PART1_PATH}/ARC-BASE-VERSION"
-          # Process complete update
           echo "Successful!"
-          deleteConfigKey "arc.confhash" "${USER_CONFIG_FILE}"
           sleep 2
         else
           updateFailed
@@ -45,7 +41,6 @@ function updateLoader() {
 ###############################################################################
 # Update System
 function updateSystem() {
-  # Check for new Version
   idx=0
   while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
     local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-system/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
@@ -57,7 +52,6 @@ function updateSystem() {
   done
   if [ -n "${TAG}" ]; then
     (
-      # Download update file
       local URL="https://github.com/AuxXxilium/arc-system/releases/download/${TAG}/system-${TAG}.zip"
       echo "Downloading ${TAG}"
       curl -#kL "${URL}" -o "${TMP_PATH}/system.zip" 2>&1 | while IFS= read -r -n1 char; do
@@ -71,6 +65,7 @@ function updateSystem() {
         echo "Installing new System..."
         if unzip -oq "${TMP_PATH}/system.zip" -d "${PART3_PATH}"; then
           rm -f "${TMP_PATH}/system.zip"
+          echo "${TAG}" > "${PART1_PATH}/ARC-VERSION"
           echo "Successful!"
         else
           updateFailed
@@ -90,7 +85,6 @@ function updateSystem() {
 # Update Addons
 function updateAddons() {
   [ -f "${ADDONS_PATH}/VERSION" ] && local ADDONSVERSION="$(cat "${ADDONS_PATH}/VERSION")" || ADDONSVERSION="0.0.0"
-  # Check for new Version
   idx=0
   while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
     local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-addons/releases" | jq -r ".[].tag_name" | sort -rV | head -1)"
@@ -102,7 +96,6 @@ function updateAddons() {
   done
   if [ -n "${TAG}" ] && [ "${ADDONSVERSION}" != "${TAG}" ]; then
     (
-      # Download update file
       echo "Downloading ${TAG}"
       local URL="https://github.com/AuxXxilium/arc-addons/releases/download/${TAG}/addons.zip"
       curl -#kL "${URL}" -o "${TMP_PATH}/addons.zip" 2>&1 | while IFS= read -r -n1 char; do
@@ -142,7 +135,6 @@ function updateAddons() {
 # Update Patches
 function updatePatches() {
   [ -f "${PATCH_PATH}/VERSION" ] && local PATCHESVERSION="$(cat "${PATCH_PATH}/VERSION")" || PATCHESVERSION="0.0.0"
-  # Check for new Version
   idx=0
   while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
     local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-patches/releases" | jq -r ".[].tag_name" | sort -rV | head -1)"
@@ -154,7 +146,6 @@ function updatePatches() {
   done
   if [ -n "${TAG}" ] && [ "${PATCHESVERSION}" != "${TAG}" ]; then
     (
-      # Download update file
       local URL="https://github.com/AuxXxilium/arc-patches/releases/download/${TAG}/patches.zip"
       echo "Downloading ${TAG}"
       curl -#kL "${URL}" -o "${TMP_PATH}/patches.zip" 2>&1 | while IFS= read -r -n1 char; do
@@ -187,7 +178,6 @@ function updatePatches() {
 # Update Custom
 function updateCustom() {
   [ -f "${CUSTOM_PATH}/VERSION" ] && local CUSTOMVERSION="$(cat "${CUSTOM_PATH}/VERSION")" || CUSTOMVERSION="0.0.0"
-  # Check for new Version
   idx=0
   while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
     local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-custom/releases" | jq -r ".[].tag_name" | sort -rV | head -1)"
@@ -199,7 +189,6 @@ function updateCustom() {
   done
   if [ -n "${TAG}" ] && [ "${CUSTOMVERSION}" != "${TAG}" ]; then
     (
-      # Download update file
       local URL="https://github.com/AuxXxilium/arc-custom/releases/download/${TAG}/custom.zip"
       echo "Downloading ${TAG}"
       curl -#kL "${URL}" -o "${TMP_PATH}/custom.zip" 2>&1 | while IFS= read -r -n1 char; do
@@ -249,7 +238,6 @@ function updateModules() {
     (
       rm -rf "${MODULES_PATH}"
       mkdir -p "${MODULES_PATH}"
-      # Download update file
       local URL="https://github.com/AuxXxilium/arc-modules/releases/download/${TAG}/${PLATFORM}-${KVERP}.modules"
       echo "Downloading Modules ${TAG}"
       curl -#kL "${URL}" -o "${MODULES_PATH}/${PLATFORM}-${KVERP}.modules" 2>&1 | while IFS= read -r -n1 char; do
@@ -265,7 +253,6 @@ function updateModules() {
         [[ $keep == 1 ]] && progress="$progress$char" ;
       done
       if [ -f "${MODULES_PATH}/${PLATFORM}-${KVERP}.modules" ] && [ -f "${MODULES_PATH}/firmware.modules" ]; then
-        # Rebuild modules if model/build is selected
         if [ -n "${PLATFORM}" ] && [ -n "${KVERP}" ]; then
           echo "Installing Modules..."
           writeConfigKey "modules" "{}" "${USER_CONFIG_FILE}"
@@ -292,7 +279,6 @@ function updateConfigs() {
   local ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
   [ -f "${MODEL_CONFIGS_PATH}/VERSION" ] && local CONFIGSVERSION="$(cat "${MODEL_CONFIG_PATH}/VERSION")" || CONFIGSVERSION="0.0.0"
   if [ -z "${1}" ]; then
-    # Check for new Version
     idx=0
     while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
       local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-configs/releases" | jq -r ".[].tag_name" | sort -rV | head -1)"
@@ -307,7 +293,6 @@ function updateConfigs() {
   fi
   if [ -n "${TAG}" ] && [ "${CONFIGSVERSION}" != "${TAG}" ]; then
     (
-      # Download update file
       local URL="https://github.com/AuxXxilium/arc-configs/releases/download/${TAG}/configs.zip"
       echo "Downloading ${TAG}"
       curl -#kL "${URL}" -o "${TMP_PATH}/configs.zip" 2>&1 | while IFS= read -r -n1 char; do
@@ -342,7 +327,6 @@ function updateConfigs() {
 function updateLKMs() {
   [ -f "${LKMS_PATH}/VERSION" ] && local LKMVERSION="$(cat "${LKMS_PATH}/VERSION")" || LKMVERSION="0.0.0"
   if [ -z "${1}" ]; then
-    # Check for new Version
     idx=0
     while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
       local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-lkm/releases" | jq -r ".[].tag_name" | sort -rV | head -1)"
@@ -357,7 +341,6 @@ function updateLKMs() {
   fi
   if [ -n "${TAG}" ] && [ "${LKMVERSION}" != "${TAG}" ]; then
     (
-      # Download update file
       local URL="https://github.com/AuxXxilium/arc-lkm/releases/download/${TAG}/rp-lkms.zip"
       echo "Downloading ${TAG}"
       curl -#kL "${URL}" -o "${TMP_PATH}/rp-lkms.zip" 2>&1 | while IFS= read -r -n1 char; do
@@ -392,8 +375,14 @@ function arcUpdate() {
   KERNEL="$(readConfigKey "kernel" "${USER_CONFIG_FILE}")"
   BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
   FAILED="false"
-  # Automatic Update
   if [ "${UPDATEMODE}" == "true" ]; then
+    NEWVER="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
+    OLDVER="$(cat ${PART1_PATH}/ARC-BASE-VERSION)"
+    if [ "${NEWVER}" != "${OLDVER}" ]; then
+      dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
+      --infobox "Updating Base Image..." 0 0
+      updateLoader "${NEWVER}"
+    fi
     dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
       --infobox "Updating Dependencies..." 0 0
     sleep 3
@@ -430,7 +419,6 @@ function arcUpdate() {
       --infobox "Update failed!\nTry again later." 0 0
     sleep 3
   elif [ "${FAILED}" == "false" ] && [ "${UPDATEMODE}" == "true" ]; then
-    # Ask for Boot
     dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
       --infobox "Update successful! -> Building now..." 0 0
     sleep 3
@@ -453,7 +441,6 @@ function arcUpdate() {
 function updateOffline() {
   local ARCMODE="$(readConfigKey "arc.mode" "${USER_CONFIG_FILE}")"
   if [ "${ARCMODE}" != "automated" ]; then
-    # Download offline file
     rm -f "${SYSTEM_PATH}/include/offline.json"
     curl -skL "https://autoupdate.synology.com/os/v2" -o "${SYSTEM_PATH}/include/offline.json"
   fi
