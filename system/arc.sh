@@ -386,7 +386,7 @@ function arcVersion() {
         initConfigKey "addons.powersched" "" "${USER_CONFIG_FILE}"
         initConfigKey "addons.sensors" "" "${USER_CONFIG_FILE}"
       fi
-      if echo "$(lsmod)" 2>/dev/null | grep -q "i915" && [[ "${PLATFORM}" == "apollolake" || "${PLATFORM}" == "geminilake" ]]; then
+      if [ "${PLATFORM}" == "apollolake" ] || [ "${PLATFORM}" == "geminilake" ]; then
         initConfigKey "addons.i915" "" "${USER_CONFIG_FILE}"
       fi
       if echo "${PAT_URL}" 2>/dev/null | grep -q "7.2.2"; then
