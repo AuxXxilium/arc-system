@@ -229,6 +229,7 @@ if [[ -z "${IPCON}" || "${ARCMODE}" == "automated" ]]; then
 elif [ -n "${IPCON}" ]; then
   if echo "${ARC_BASE_TITLE}" | grep -q "dev"; then
     echo -e "\033[1;34mArc System Development...\033[0m"
+    getArcSystem "dev"
   elif [ "${ARCAUTOUPDATE}" == "true" ]; then
     TAG="$(curl -m 5 -skL "https://api.github.com/repos/AuxXxilium/arc-system/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
     [ -z "${TAG}" ] && TAG="${ARC_VERSION}"

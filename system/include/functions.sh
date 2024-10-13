@@ -591,9 +591,7 @@ function getArcBase() {
       done
       if [ -f "${TMP_PATH}/update.zip" ]; then
         echo -e "Downloading Base Image successful!\nUpdating Base Image..."
-        if unzip -oq "${TMP_PATH}/update.zip" -d "${TMP_PATH}"; then
-          cp -f "${TMP_PATH}/bzImage-arc" "${PART3_PATH}/bzImage-arc"
-          cp -f "${TMP_PATH}/initrd-arc" "${PART3_PATH}/initrd-arc"
+        if unzip -oq "${TMP_PATH}/update.zip" -d "${PART3_PATH}"; then
           rm -f "${TMP_PATH}/update.zip" >/dev/null
           echo "${TAG}" > "${PART1_PATH}/ARC-BASE-VERSION"
           echo "Successful! -> Rebooting..."
@@ -615,26 +613,25 @@ function getArcBase() {
 ###############################################################################
 # Arc System Files download called by init.sh
 function getArcSystem() {
-  local DEST_PATH="${PART3_PATH}/system"
   local CACHE_FILE="/tmp/system.zip"
   local DEV="${1}"
   rm -f "${CACHE_FILE}"
   if [ -n "${DEV}" ]; then
-    if curl -m 10 --interface "${DEV}" -skL "https://api.github.com/repos/AuxXxilium/arc-system/releases" | jq -r ".[].tag_name" | grep "dev" | sort -rV | head -1; then
-      local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-system/releases" | jq -r ".[].tag_name" | grep "dev" | sort -rV | head -1)"
-    fi
-  elif curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-system/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1; then
+    local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-system/releases" | jq -r ".[].tag_name" | grep "dev" | sort -rV | head -1)"
+  else
     local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-system/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
   fi
   if curl -skL "https://github.com/AuxXxilium/arc-system/releases/download/${TAG}/system-${TAG}.zip" -o "${CACHE_FILE}"; then
-    echo "${TAG}" >"${PART1_PATH}/ARC-VERSION"
-    # Unzip LKMs
-    rm -rf "${DEST_PATH}"
-    mkdir -p "${DEST_PATH}"
-    unzip "${CACHE_FILE}" -d "${PART3_PATH}" >/dev/null 2>&1
-    [ -f "${SYSTEM_PATH}/grub.cfg" ] && cp -f "${SYSTEM_PATH}/grub.cfg" "${USER_GRUB_CONFIG}"
-    rm -f "${CACHE_FILE}"
-    return 0
+    mkdir -p "${SYSTEM_PATH}"
+    if unzip -oq "${CACHE_FILE}" -d "${PART3_PATH}" >/dev/null 2>&1; then
+      echo "${TAG}" >"${PART1_PATH}/ARC-VERSION"
+      [ -f "${SYSTEM_PATH}/grub.cfg" ] && cp -f "${SYSTEM_PATH}/grub.cfg" "${USER_GRUB_CONFIG}"
+      rm -f "${CACHE_FILE}"
+      return 0
+    else
+      echo -e "Failed to unpack System Image."
+      return 1
+    fi
   else
     echo -e "Failed to download Arc System Files. Check your network connection.\nYou can restart download with 'init.sh' command."
     return 1
