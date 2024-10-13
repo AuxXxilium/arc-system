@@ -60,6 +60,7 @@ function updateSystem() {
         [[ $keep == 1 ]] && progress="$progress$char" ;
       done
       if [ -f "${TMP_PATH}/system.zip" ]; then
+        rm -rf "${SYSTEM_PATH}"
         mkdir -p "${SYSTEM_PATH}"
         echo "Installing new System..."
         if unzip -oq "${TMP_PATH}/system.zip" -d "${PART3_PATH}"; then
@@ -376,16 +377,6 @@ function arcUpdate() {
   BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
   FAILED="false"
   FORCEREBOOT="false"
-  NEWVER="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
-  OLDVER="$(cat ${PART1_PATH}/ARC-BASE-VERSION)"
-  if [ "${NEWVER}" != "${OLDVER}" ]; then
-    dialog --backtitle "$(backtitle)" --title "Update Base Image" --aspect 18 \
-    --infobox "Updating Base Image... ${OLDVER} -> ${NEWVER}" 0 0
-    sleep 3
-    FORCEREBOOT="true"
-    updateLoader "${NEWVER}"
-    [ $? -ne 0 ] && FAILED="true"
-  fi
   dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
     --infobox "Updating Dependencies..." 0 0
   sleep 3
@@ -403,6 +394,16 @@ function arcUpdate() {
     updateCustom
     [ $? -ne 0 ] && FAILED="true"
   fi
+  NEWVER="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
+  OLDVER="$(cat ${PART1_PATH}/ARC-BASE-VERSION)"
+  if [ "${NEWVER}" != "${OLDVER}" ]; then
+    dialog --backtitle "$(backtitle)" --title "Update Base Image" --aspect 18 \
+    --infobox "Updating Base Image... ${OLDVER} -> ${NEWVER}" 0 0
+    sleep 3
+    FORCEREBOOT="true"
+    updateLoader "${NEWVER}"
+    [ $? -ne 0 ] && FAILED="true"
+  fi
   if [ "${FAILED}" == "true" ] && [ "${UPDATEMODE}" == "true" ]; then
     dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
       --infobox "Update failed!\nTry again later." 0 0
@@ -414,7 +415,7 @@ function arcUpdate() {
     sleep 3
   elif [ "${FAILED}" == "false" ] && [ "${UPDATEMODE}" == "true" ]; then
     dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
-      --infobox "Update successful! -> Building now..." 0 0
+      --infobox "Update successful! -> Reboot to automated build..." 0 0
     sleep 3
     rebootTo "automated"
   elif [ "${FAILED}" == "false" ]; then
