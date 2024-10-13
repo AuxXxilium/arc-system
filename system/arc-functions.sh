@@ -822,25 +822,24 @@ function updateMenu() {
     dialog --backtitle "$(backtitle)" --colors --cancel-label "Exit" \
       --menu "Choose an Option" 0 0 0 \
       1 "Update Base Image \Z1(no reflash)\Zn" \
-      2 "Inplace-Update System/Dependencies" \
+      2 "Update Dependencies" \
       3 "Update Arc Patch" \
       2>"${TMP_PATH}/resp"
     [ $? -ne 0 ] && break
     case "$(cat ${TMP_PATH}/resp)" in
       1)
         # Ask for Tag
-        TAG=""
-        NEWVER="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
-        OLDVER="$(cat ${PART1_PATH}/ARC-BASE-VERSION)"
+        TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
+        OLD="$(cat ${PART1_PATH}/ARC-BASE-VERSION)"
         dialog --clear --backtitle "$(backtitle)" --title "Update Base Image" \
-          --menu "Current: ${OLDVER} -> Which Version?" 7 50 0 \
-          1 "Latest ${NEWVER}" \
+          --menu "Current: ${OLD} -> Which Version?" 7 50 0 \
+          1 "Latest ${TAG}" \
           2 "Select Version" \
         2>"${TMP_PATH}/opts"
         [ $? -ne 0 ] && break
         opts=$(cat ${TMP_PATH}/opts)
         if [ ${opts} -eq 1 ]; then
-          TAG=""
+          [ -z "${TAG}" ] && return 1
         elif [ ${opts} -eq 2 ]; then
           dialog --backtitle "$(backtitle)" --title "Update Base Image" \
           --inputbox "Type the Version!" 0 0 \
@@ -851,7 +850,7 @@ function updateMenu() {
         if updateLoader "${TAG}"; then
           writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
           BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
-          exec reboot && exit 0
+          rebootTo "config"
         fi
         ;;
       2)

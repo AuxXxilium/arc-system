@@ -376,12 +376,9 @@ function arcUpdate() {
   KERNEL="$(readConfigKey "kernel" "${USER_CONFIG_FILE}")"
   BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
   FAILED="false"
-  FORCEREBOOT="false"
-  dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
+  dialog --backtitle "$(backtitle)" --title "Update Dependencies" --aspect 18 \
     --infobox "Updating Dependencies..." 0 0
   sleep 3
-  updateSystem
-  [ $? -ne 0 ] && FAILED="true"
   updateAddons
   [ $? -ne 0 ] && FAILED="true"
   updateModules
@@ -394,38 +391,28 @@ function arcUpdate() {
     updateCustom
     [ $? -ne 0 ] && FAILED="true"
   fi
-  NEWVER="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
-  OLDVER="$(cat ${PART1_PATH}/ARC-BASE-VERSION)"
-  if [ "${NEWVER}" != "${OLDVER}" ]; then
-    dialog --backtitle "$(backtitle)" --title "Update Base Image" --aspect 18 \
-    --infobox "Updating Base Image... ${OLDVER} -> ${NEWVER}" 0 0
-    sleep 3
-    FORCEREBOOT="true"
-    updateLoader "${NEWVER}"
-    [ $? -ne 0 ] && FAILED="true"
-  fi
   if [ "${FAILED}" == "true" ] && [ "${UPDATEMODE}" == "true" ]; then
-    dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
+    dialog --backtitle "$(backtitle)" --title "Update Dependencies" --aspect 18 \
       --infobox "Update failed!\nTry again later." 0 0
     sleep 3
     exec reboot
   elif [ "${FAILED}" == "true" ]; then
-    dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
+    dialog --backtitle "$(backtitle)" --title "Update Dependencies" --aspect 18 \
       --infobox "Update failed!\nTry again later." 0 0
     sleep 3
   elif [ "${FAILED}" == "false" ] && [ "${UPDATEMODE}" == "true" ]; then
-    dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
+    dialog --backtitle "$(backtitle)" --title "Update Dependencies" --aspect 18 \
       --infobox "Update successful! -> Reboot to automated build..." 0 0
     sleep 3
     rebootTo "automated"
   elif [ "${FAILED}" == "false" ]; then
-    dialog --backtitle "$(backtitle)" --title "Inplace-Update Dependencies" --aspect 18 \
+    dialog --backtitle "$(backtitle)" --title "Update Dependencies" --aspect 18 \
       --infobox "Update successful!" 0 0
     writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
     BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
     sleep 3
     clear
-    [ "${FORCEREBOOT}" == "false" ] && arc.sh || rebootTo "config"
+    arc.sh
   fi
 }
 
