@@ -1,15 +1,18 @@
 ###############################################################################
 # Update Loader
 function updateLoader() {
-  idx=0
-  while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
-    local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
-    if [ -n "${TAG}" ]; then
-      break
-    fi
-    sleep 3
-    idx=$((${idx} + 1))
-  done
+  local TAG="${1}"
+  if [ -z "${TAG}" ]; then
+    idx=0
+    while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
+      local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-loader/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
+      if [ -n "${TAG}" ]; then
+        break
+      fi
+      sleep 3
+      idx=$((${idx} + 1))
+    done
+  fi
   if [ -n "${TAG}" ]; then
     (
       echo "Downloading ${TAG}"
@@ -21,8 +24,9 @@ function updateLoader() {
       done
       if [ -f "${TMP_PATH}/update.zip" ]; then
         echo -e "Downloading Base Image successful!\nUpdating Base Image..."
-        if unzip -oq "${TMP_PATH}/update.zip" -d "${PART3_PATH}"; then
-          rm -f "${TMP_PATH}/update.zip" >/dev/null
+        if unzip -oq "${TMP_PATH}/update.zip" -d "${TMP_PATH}"; then
+          cp -f "${TMP_PATH}/bzImage-arc" "${PART3_PATH}/bzImage-arc"
+          cp -f "${TMP_PATH}/initrd-arc" "${PART3_PATH}/initrd-arc"
           echo "${TAG}" > "${PART1_PATH}/ARC-BASE-VERSION"
           echo "Successful!"
           sleep 2
