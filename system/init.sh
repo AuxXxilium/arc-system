@@ -233,8 +233,9 @@ elif [ -n "${IPCON}" ]; then
     TAG="$(curl -m 5 -skL "https://api.github.com/repos/AuxXxilium/arc-system/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
     [ -z "${TAG}" ] && TAG="${ARC_VERSION}"
     if [ "${TAG}" != "${ARC_VERSION}" ]; then
-    echo -e "\033[1;34mDownloading Arc System Files...\033[0m"
-    getArcSystem
+      echo -e "\033[1;34mDownloading Arc System Files...\033[0m"
+      getArcSystem
+    fi
   fi
   [ ! -f "${ARC_PATH}/arc.sh" ] && echo -e "\033[1;31mError: Can't get Arc System Files...\033[0m"
 else
