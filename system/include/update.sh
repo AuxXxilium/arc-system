@@ -252,6 +252,7 @@ function updateModules() {
         [[ $keep == 1 ]] && progress="$progress$char" ;
       done
       if [ -f "${MODULES_PATH}/${PLATFORM}-${KVERP}.modules" ] && [ -f "${MODULES_PATH}/firmware.modules" ]; then
+        echo "${TAG}" > "${MODULES_PATH}/VERSION"
         if [ -n "${PLATFORM}" ] && [ -n "${KVERP}" ]; then
           echo "Installing Modules..."
           writeConfigKey "modules" "{}" "${USER_CONFIG_FILE}"
