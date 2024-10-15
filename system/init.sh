@@ -35,8 +35,8 @@ printf "\033[1;34m%*s\033[0m\n" $(((${#TITLE} + ${COLUMNS}) / 2)) "${TITLE}"
 if [ ! -f "${USER_CONFIG_FILE}" ]; then
   touch "${USER_CONFIG_FILE}"
 fi
-initConfigKey "arc" "{}" "${USER_CONFIG_FILE}"
 initConfigKey "addons" "{}" "${USER_CONFIG_FILE}"
+initConfigKey "arc" "{}" "${USER_CONFIG_FILE}"
 initConfigKey "arc.autoupdate" "true" "${USER_CONFIG_FILE}"
 initConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
 initConfigKey "arc.confdone" "false" "${USER_CONFIG_FILE}"
@@ -140,8 +140,8 @@ echo -e "Loader Disk Type: \033[1;34m${BUS}\033[0m"
 echo
 
 # Save variables to user config file
-writeConfigKey "vid" ${VID} "${USER_CONFIG_FILE}"
-writeConfigKey "pid" ${PID} "${USER_CONFIG_FILE}"
+writeConfigKey "vid" "${VID}" "${USER_CONFIG_FILE}"
+writeConfigKey "pid" "${PID}" "${USER_CONFIG_FILE}"
 
 # Decide if boot automatically
 BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
