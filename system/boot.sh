@@ -151,7 +151,7 @@ CMDLINE['log_buf_len']="32M"
 CMDLINE['panic']="${KERNELPANIC:-0}"
 CMDLINE['pcie_aspm']="off"
 CMDLINE['modprobe.blacklist']="${MODBLACKLIST}"
-[ $(cat /proc/cpuinfo | grep Intel | wc -l) -gt 0 ] && CMDLINE["intel_pstate"]="disable"
+#[ $(cat /proc/cpuinfo | grep Intel | wc -l) -gt 0 ] && CMDLINE["intel_pstate"]="disable"
 
 #if [ -n "$(ls /dev/mmcblk* 2>/dev/null)" ] && [ "${BUS}" != "mmc" ] && [ "${EMMCBOOT}" != "true" ]; then
 #   if ! echo "${CMDLINE['modprobe.blacklist']}" | grep -q "sdhci"; then
@@ -182,7 +182,7 @@ ETHN="$(echo ${ETHX} | wc -w)"
 NIC=0
 for ETH in ${ETHX}; do
   MAC="$(readConfigKey "${ETH}" "${USER_CONFIG_FILE}")"
-  [ -z "${MAC}" ] && MAC="$(cat /sys/class/net/${ETH}/address 2>/dev/null | sed 's/://g' | tr '[:lower:]' '[:upper:]')"
+  [ -z "${MAC}" ] && MAC="$(cat /sys/class/net/${ETH}/address 2>/dev/null | tr '[:lower:]' '[:upper:]')"
   NIC=$((${NIC} + 1))
   [ ${NIC} -le ${ETHM} ] && CMDLINE["mac${NIC}"]="${MAC}"
   [ ${NIC} -ge ${ETHM} ] && break
