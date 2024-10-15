@@ -1805,7 +1805,7 @@ function decryptMenu() {
   if [ -f "${S_FILE_ENC}" ]; then
     CONFIGSVERSION=$(cat "${MODEL_CONFIG_PATH}/VERSION")
     ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
-    if openssl enc -in "${S_FILE_ENC}" -out "${S_FILE_ARC}" -d -aes-256-cbc -k "${ARCKEY}" 2>/dev/null; then
+    if openssl enc -in "${S_FILE_ENC}" -out "${S_FILE_ARC}" -d -aes-256-cfb -k "${ARCKEY}" 2>/dev/null; then
         dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
           --msgbox "Decrypt successful: You can use Arc Patch." 5 50
         mv -f "${S_FILE_ARC}" "${S_FILE}"
@@ -1816,7 +1816,7 @@ function decryptMenu() {
           --inputbox "Enter Decryption Key for ${CONFIGSVERSION}!\nKey is available in my Discord:\nhttps://discord.auxxxilium.tech" 9 50 2>"${TMP_PATH}/resp"
         [ $? -ne 0 ] && break
         ARCKEY=$(cat "${TMP_PATH}/resp")
-        if openssl enc -in "${S_FILE_ENC}" -out "${S_FILE_ARC}" -d -aes-256-cbc -k "${ARCKEY}" 2>/dev/null; then
+        if openssl enc -in "${S_FILE_ENC}" -out "${S_FILE_ARC}" -d -aes-256-cfb -k "${ARCKEY}" 2>/dev/null; then
           dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
             --msgbox "Decrypt successful: You can use Arc Patch." 5 50
           mv -f "${S_FILE_ARC}" "${S_FILE}"
