@@ -24,8 +24,10 @@ BUS=$(getBus "${LOADER_DISK}")
 clear
 COLUMNS=${COLUMNS:-50}
 BANNER="$(figlet -c -w "$(((${COLUMNS})))" "Arc Loader")"
-TITLE="Version:"
-TITLE+=" ${ARC_TITLE} | ${ARC_BRANCH}"
+TITLE="Base:"
+TITLE+=" ${ARC_BASE_VERSION}"
+[ -n "${ARC_VERSION}" ] && TITLE+=" | System: ${ARC_VERSION}"
+[ -n "${ARC_BRANCH}" ] && TITLE+=" | Branch: ${ARC_BRANCH}"
 printf "\033[1;30m%*s\n" ${COLUMNS} ""
 printf "\033[1;30m%*s\033[A\n" ${COLUMNS} ""
 printf "\033[1;34m%*s\033[0m\n" ${COLUMNS} "${BANNER}"
