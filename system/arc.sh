@@ -80,8 +80,6 @@ function arcModel() {
     --infobox "Reading Models..." 3 25
   if [ ! -f "${S_FILE}" ]; then
     updateConfigs
-    CONFHASH="$(sha256sum "${S_FILE}" | awk '{print $1}')"
-    writeConfigKey "arc.confhash" "${CONFHASH}" "${USER_CONFIG_FILE}"
   fi
   # Loop menu
   RESTRICT=1
@@ -431,10 +429,8 @@ function arcPatch() {
   MODEL="$(readConfigKey "model" "${USER_CONFIG_FILE}")"
   ARCCONF="$(readConfigKey "${MODEL}.serial" "${S_FILE}")"
   # Check for Custom Build
-  CONFHASHFILE="$(sha256sum "${S_FILE}" | awk '{print $1}')"
-  CONFHASH="$(readConfigKey "arc.confhash" "${USER_CONFIG_FILE}")"
   if [ "${ARCMODE}" == "automated" ]; then
-    if [ -n "${ARCCONF}" ] && [ "${CONFHASH}" == "${CONFHASHFILE}" ]; then
+    if [ -n "${ARCCONF}" ]; then
       SN=$(generateSerial "${MODEL}" "true" | tr '[:lower:]' '[:upper:]')
       writeConfigKey "arc.patch" "true" "${USER_CONFIG_FILE}"
     else
@@ -453,7 +449,7 @@ function arcPatch() {
     [ -z "${resp}" ] && return 1
     if [ ${resp} -eq 1 ]; then
       [ -z "${ARCCONF}" ] && decryptMenu || true
-      if [ -n "${ARCCONF}" ] && [ "${CONFHASH}" == "${CONFHASHFILE}" ]; then
+      if [ -n "${ARCCONF}" ]; then
         # Read Arc Patch from File
         SN="$(generateSerial "${MODEL}" "true" | tr '[:lower:]' '[:upper:]')"
         writeConfigKey "arc.patch" "true" "${USER_CONFIG_FILE}"
@@ -726,9 +722,7 @@ function make() {
   PAT_HASH="$(readConfigKey "pathash" "${USER_CONFIG_FILE}")"
   # Check for Arc Patch
   ARCCONF="$(readConfigKey "${MODEL}.serial" "${S_FILE}")"
-  CONFHASHFILE="$(sha256sum "${S_FILE}" | awk '{print $1}')"
-  CONFHASH="$(readConfigKey "arc.confhash" "${USER_CONFIG_FILE}")"
-  if [ -z "${ARCCONF}" ] || [ "${CONFHASH}" != "${CONFHASHFILE}" ]; then
+  if [ -z "${ARCCONF}" ]; then
     deleteConfigKey "addons.amepatch" "${USER_CONFIG_FILE}"
     deleteConfigKey "addons.arcdns" "${USER_CONFIG_FILE}"
     deleteConfigKey "addons.sspatch" "${USER_CONFIG_FILE}"

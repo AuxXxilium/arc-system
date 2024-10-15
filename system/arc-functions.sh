@@ -1806,11 +1806,9 @@ function decryptMenu() {
     CONFIGSVERSION=$(cat "${MODEL_CONFIG_PATH}/VERSION")
     ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
     if openssl enc -in "${S_FILE_ENC}" -out "${S_FILE_ARC}" -d -aes-256-cbc -k "${ARCKEY}" 2>/dev/null; then
-        CONFHASHARC="$(sha256sum "${S_FILE_ARC}" | awk '{print $1}')"
-        CONFHASHCHECK=$(cat "${S_FILE_CHECK}")
         dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
           --msgbox "Decrypt successful: You can use Arc Patch." 5 50
-        [ "${CONFHASHCHECK}" == "${CONFHASHARC}" ] && mv -f "${S_FILE_ARC}" "${S_FILE}" || mv -f "${S_FILE}.bak" "${S_FILE}"
+        mv -f "${S_FILE_ARC}" "${S_FILE}"
     else
       while true; do
         cp -f "${S_FILE}" "${S_FILE}.bak"
@@ -1819,11 +1817,9 @@ function decryptMenu() {
         [ $? -ne 0 ] && break
         ARCKEY=$(cat "${TMP_PATH}/resp")
         if openssl enc -in "${S_FILE_ENC}" -out "${S_FILE_ARC}" -d -aes-256-cbc -k "${ARCKEY}" 2>/dev/null; then
-          CONFHASHARC="$(sha256sum "${S_FILE_ARC}" | awk '{print $1}')"
-          CONFHASHCHECK=$(cat "${S_FILE_CHECK}")
           dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
             --msgbox "Decrypt successful: You can use Arc Patch." 5 50
-          [ "${CONFHASHCHECK}" == "${CONFHASHARC}" ] && mv -f "${S_FILE_ARC}" "${S_FILE}" || mv -f "${S_FILE}.bak" "${S_FILE}"
+          mv -f "${S_FILE_ARC}" "${S_FILE}"
           writeConfigKey "arc.key" "${ARCKEY}" "${USER_CONFIG_FILE}"
           ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
         else
@@ -1839,8 +1835,6 @@ function decryptMenu() {
       done
     fi
   fi
-  CONFHASH="$(sha256sum "${S_FILE}" | awk '{print $1}')"
-  writeConfigKey "arc.confhash" "${CONFHASH}" "${USER_CONFIG_FILE}"
   writeConfigKey "arc.confdone" "false" "${USER_CONFIG_FILE}"
   CONFDONE="$(readConfigKey "arc.confdone" "${USER_CONFIG_FILE}")"
   writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"

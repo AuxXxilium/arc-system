@@ -307,8 +307,6 @@ function updateConfigs() {
         echo "Installing new Configs..."
         if unzip -oq "${TMP_PATH}/configs.zip" -d "${MODEL_CONFIG_PATH}"; then
           rm -f "${TMP_PATH}/configs.zip"
-          CONFHASH="$(sha256sum "${S_FILE}" | awk '{print $1}')"
-          writeConfigKey "arc.confhash" "${CONFHASH}" "${USER_CONFIG_FILE}"
           echo "Successful!"
         else
           updateFailed
