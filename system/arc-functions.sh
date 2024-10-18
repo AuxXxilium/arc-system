@@ -821,7 +821,7 @@ function updateMenu() {
   while true; do
     dialog --backtitle "$(backtitle)" --colors --cancel-label "Exit" \
       --menu "Choose an Option" 0 0 0 \
-      1 "Update Base Image \Z1(no reflash)\Zn" \
+      1 "Update Loader \Z1(no reflash)\Zn" \
       2 "Update Dependencies" \
       3 "Update Arc Patch" \
       2>"${TMP_PATH}/resp"
@@ -1206,7 +1206,7 @@ function networkdiag() {
       fi
     done
     echo
-    GITHUBAPI=$(curl --interface ${ETH} -m 3 -skL https://api.github.com/repos/AuxXxilium/arc/releases/latest | grep "tag_name" | awk '{print substr($2, 2, length($2)-3)}')
+    GITHUBAPI=$(curl --interface ${ETH} -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)
     if [[ $? -ne 0 || -z "${GITHUBAPI}" ]]; then
       echo -e "Github API not reachable!"
     else
