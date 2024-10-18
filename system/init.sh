@@ -37,7 +37,6 @@ if [ ! -f "${USER_CONFIG_FILE}" ]; then
 fi
 initConfigKey "addons" "{}" "${USER_CONFIG_FILE}"
 initConfigKey "arc" "{}" "${USER_CONFIG_FILE}"
-initConfigKey "arc.autoupdate" "true" "${USER_CONFIG_FILE}"
 initConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
 initConfigKey "arc.confdone" "false" "${USER_CONFIG_FILE}"
 initConfigKey "arc.dynamic" "false" "${USER_CONFIG_FILE}"
@@ -212,41 +211,20 @@ mkdir -p "${MODULES_PATH}"
 mkdir -p "${PATCH_PATH}"
 mkdir -p "${USER_UP_PATH}"
 
-# Check for Base Version
-ARCAUTOUPDATE="$(readConfigKey "arc.autoupdate" "${USER_CONFIG_FILE}")"
-if grep -q "dev" "${PART1_PATH}/ARC-BASE-VERSION"; then
-  DEVMODE="true"
-else
-  DEVMODE="false"
-fi
-if [ "${ARCAUTOUPDATE}" == "true" ] && [ "${ARCMODE}" != "automated" ]; then
-  if [ "${DEVMODE}" == "true" ]; then
-    echo -e "\033[1;34mArc Base Development...\033[0m"
-  elif [ "${DEVMODE}" == "false" ]; then
-    TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
-    if [ -n "${TAG}" ] && [ "${TAG}" != "${ARC_BASE_VERSION}" ]; then
-      echo -e "\033[1;34mNew Base Image found...\033[0m"
-      getArcBase
-      rebootTo "${ARCMODE}"
-    fi
-  fi
-fi
 # Download Arc System Files
-if [[ -z "${IPCON}" || "${ARCMODE}" == "automated" ]]; then
+if [ "${ARCMODE}" == "automated" ]; then
   echo -e "\033[1;34mUsing preloaded Arc System Files...\033[0m"
-elif [ -n "${IPCON}" ]; then
-  if [ "${DEVMODE}" == "true" ]; then
-    echo -e "\033[1;34mDownloading Arc System Development...\033[0m"
-    getArcSystem "dev"
-  elif [ "${DEVMODE}" == "false" ] && [ "${ARCAUTOUPDATE}" == "true" ]; then
-    TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-system/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
-    if [ -n "${TAG}" ] && [ "${TAG}" != "${ARC_VERSION}" ]; then
-      echo -e "\033[1;34mDownloading Arc System Files...\033[0m"
-      getArcSystem
-    fi
+elif [ -n "${IPCON}" ] && [ "${ARC_BRANCH}" == "dev"]; then
+  echo -e "\033[1;34mDownloading Arc System Development...\033[0m"
+  getArcSystem "dev"
+elif [[ -n "${IPCON}" ]] || [ "${ARC_BRANCH}" == "minimal" ]; then
+  TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-system/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
+  if [[ -n "${TAG}" && "${TAG}" != "${ARC_VERSION}" ]]; then
+    echo -e "\033[1;34mDownloading Arc System Files...\033[0m"
+    getArcSystem
   fi
   [ ! -f "${ARC_PATH}/arc.sh" ] && echo -e "\033[1;31mError: Can't get Arc System Files...\033[0m" && exit 1
-else
+elif [[ ! -f "${ARC_PATH}/arc.sh" && -z "${IPCON}" ]]; then
   echo -e "\033[1;31mNo Network Connection found!\033[0m\n\033[1;31mError: Arc will not work...\033[0m"
   exit 1
 fi

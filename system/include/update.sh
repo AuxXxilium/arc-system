@@ -1,6 +1,7 @@
 ###############################################################################
 # Update Loader
 function updateLoader() {
+  local ARC_BRANCH="$(readConfigKey "arc.branch" "${USER_CONFIG_FILE}")"
   local TAG="${1}"
   if [ -z "${TAG}" ]; then
     idx=0
@@ -16,14 +17,14 @@ function updateLoader() {
   if [ -n "${TAG}" ]; then
     (
       echo "Downloading ${TAG}"
-      local URL="https://github.com/AuxXxilium/arc/releases/download/${TAG}/update-${TAG}.zip"
+      local URL="https://github.com/AuxXxilium/arc/releases/download/${TAG}/update-${TAG}-${ARC_BRANCH}.zip"
       curl -#kL "${URL}" -o "${TMP_PATH}/update.zip" 2>&1 | while IFS= read -r -n1 char; do
         [[ $char =~ [0-9] ]] && keep=1 ;
         [[ $char == % ]] && echo "$progress%" && progress="" && keep=0 ;
         [[ $keep == 1 ]] && progress="$progress$char" ;
       done
       if [ -f "${TMP_PATH}/update.zip" ]; then
-        echo -e "Downloading Base Image successful!\nUpdating Base Image..."
+        echo -e "Downloading ${TAG}-${ARC_BRANCH} Loader successful!\nUpdating ${ARC_BRANCH} Loader..."
         if unzip -oq "${TMP_PATH}/update.zip" -d "${PART3_PATH}"; then
           echo "${TAG}" > "${PART1_PATH}/ARC-BASE-VERSION"
           echo "Successful!"
@@ -35,7 +36,7 @@ function updateLoader() {
         updateFailed
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "System" \
-      --progressbox "Installing Base Image..." 20 70
+      --progressbox "Update ${ARC_BRANCH} Loader..." 20 70
   fi
   return 0
 }
@@ -77,7 +78,7 @@ function updateSystem() {
         updateFailed
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "System" \
-      --progressbox "Installing System Update..." 20 70
+      --progressbox "Update System..." 20 70
   fi
   return 0
 }
@@ -127,7 +128,7 @@ function updateAddons() {
         updateFailed
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Addons" \
-      --progressbox "Installing Addons..." 20 70
+      --progressbox "Update Addons..." 20 70
   fi
   return 0
 }
@@ -170,7 +171,7 @@ function updatePatches() {
         updateFailed
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Patches" \
-      --progressbox "Installing Patches..." 20 70
+      --progressbox "Update Patches..." 20 70
   fi
   return 0
 }
@@ -213,7 +214,7 @@ function updateCustom() {
         updateFailed
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Custom" \
-      --progressbox "Installing Custom..." 20 70
+      --progressbox "Update Custom..." 20 70
   fi
   return 0
 }
@@ -239,24 +240,29 @@ function updateModules() {
     (
       rm -rf "${MODULES_PATH}"
       mkdir -p "${MODULES_PATH}"
-      local URL="https://github.com/AuxXxilium/arc-modules/releases/download/${TAG}/${PLATFORM}-${KVERP}.modules"
+      local URL="https://github.com/AuxXxilium/arc-modules/releases/download/${TAG}/modules.zip"
       echo "Downloading Modules ${TAG}"
-      curl -#kL "${URL}" -o "${MODULES_PATH}/${PLATFORM}-${KVERP}.modules" 2>&1 | while IFS= read -r -n1 char; do
+      curl -#kL "${URL}" -o "${TMP_PATH}/modules.zip" 2>&1 | while IFS= read -r -n1 char; do
         [[ $char =~ [0-9] ]] && keep=1 ;
         [[ $char == % ]] && echo "$progress%" && progress="" && keep=0 ;
         [[ $keep == 1 ]] && progress="$progress$char" ;
       done
-      echo "Downloading Firmware ${TAG}"
-      local URL="https://github.com/AuxXxilium/arc-modules/releases/download/${TAG}/firmware.modules"
-      curl -#kL "${URL}" -o "${MODULES_PATH}/firmware.modules" 2>&1 | while IFS= read -r -n1 char; do
-        [[ $char =~ [0-9] ]] && keep=1 ;
-        [[ $char == % ]] && echo "$progress%" && progress="" && keep=0 ;
-        [[ $keep == 1 ]] && progress="$progress$char" ;
-      done
+      if [ -f "${TMP_PATH}/modules.zip" ]; then
+        echo "Installing new Modules..."
+        if unzip -oq "${TMP_PATH}/modules.zip" -d "${MODULES_PATH}"; then
+          rm -f "${TMP_PATH}/modules.zip"
+          echo "Successful!"
+        else
+          updateFailed
+        fi
+      else
+        echo "Error downloading new Version!"
+        sleep 5
+        updateFailed
+      fi
       if [ -f "${MODULES_PATH}/${PLATFORM}-${KVERP}.modules" ] && [ -f "${MODULES_PATH}/firmware.modules" ]; then
         echo "${TAG}" > "${MODULES_PATH}/VERSION"
         if [ -n "${PLATFORM}" ] && [ -n "${KVERP}" ]; then
-          echo "Installing Modules..."
           writeConfigKey "modules" "{}" "${USER_CONFIG_FILE}"
           echo "Rebuilding Modules..."
           while read -r ID DESC; do
@@ -264,13 +270,9 @@ function updateModules() {
           done < <(getAllModules "${PLATFORM}" "${KVERP}")
         fi
         echo "Successful!"
-      else
-        echo "Error downloading new Version!"
-        sleep 5
-        updateFailed
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Modules" \
-      --progressbox "Installing Modules..." 20 70
+      --progressbox "Update Modules..." 20 70
   fi
   return 0
 }
