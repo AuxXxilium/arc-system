@@ -28,7 +28,6 @@ LKM="$(readConfigKey "lkm" "${USER_CONFIG_FILE}")"
 if [ -n "${MODEL}" ]; then
   DT="$(readConfigKey "platforms.${PLATFORM}.dt" "${P_FILE}")"
   PRODUCTVER="$(readConfigKey "productver" "${USER_CONFIG_FILE}")"
-  ARCCONF="$(readConfigKey "${MODEL}.serial" "${S_FILE}" 2>/dev/null)"
 fi
 
 # Get Arc Data from Config
@@ -102,7 +101,7 @@ function arcModel() {
         COMPATIBLE=1
         DT="$(readConfigKey "platforms.${A}.dt" "${P_FILE}")"
         FLAGS="$(readConfigArray "platforms.${A}.flags" "${P_FILE}")"
-        ARCCONF="$(readConfigKey "${M}.serial" "${S_FILE}" 2>/dev/null)"
+        ARCCONF="$(readConfigKey "${M}.serial" "${S_FILE}")"
         ARC=""
         BETA=""
         [ -n "${ARCCONF}" ] && ARC="x" || ARC=""
@@ -401,7 +400,6 @@ function arcVersion() {
     [ "${PLATFORM}" == "epyc7002" ] && KVERP="${PRODUCTVER}-${KVER}" || KVERP="${KVER}"
     if [ -n "${PLATFORM}" ] && [ -n "${KVERP}" ]; then
       writeConfigKey "modules" "{}" "${USER_CONFIG_FILE}"
-      echo "Rebuilding Modules..."
       while read -r ID DESC; do
         writeConfigKey "modules.${ID}" "" "${USER_CONFIG_FILE}"
       done < <(getAllModules "${PLATFORM}" "${KVERP}")
