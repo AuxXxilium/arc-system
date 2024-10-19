@@ -108,7 +108,7 @@ function updateAddons() {
   if [ -n "${TAG}" ] && [ "${ADDONSVERSION}" != "${TAG}" ]; then
     (
       echo "Downloading ${TAG}"
-      local URL="https://github.com/AuxXxilium/arc-addons/releases/download/${TAG}/addons.zip"
+      local URL="https://github.com/AuxXxilium/arc-addons/releases/download/${TAG}/addons-${TAG}.zip"
       curl -#kL "${URL}" -o "${TMP_PATH}/addons.zip" 2>&1 | while IFS= read -r -n1 char; do
         [[ $char =~ [0-9] ]] && keep=1 ;
         [[ $char == % ]] && echo "$progress%" && progress="" && keep=0 ;
@@ -157,7 +157,7 @@ function updatePatches() {
   done
   if [ -n "${TAG}" ] && [ "${PATCHESVERSION}" != "${TAG}" ]; then
     (
-      local URL="https://github.com/AuxXxilium/arc-patches/releases/download/${TAG}/patches.zip"
+      local URL="https://github.com/AuxXxilium/arc-patches/releases/download/${TAG}/patches-${TAG}.zip"
       echo "Downloading ${TAG}"
       curl -#kL "${URL}" -o "${TMP_PATH}/patches.zip" 2>&1 | while IFS= read -r -n1 char; do
         [[ $char =~ [0-9] ]] && keep=1 ;
@@ -200,7 +200,7 @@ function updateCustom() {
   done
   if [ -n "${TAG}" ] && [ "${CUSTOMVERSION}" != "${TAG}" ]; then
     (
-      local URL="https://github.com/AuxXxilium/arc-custom/releases/download/${TAG}/custom.zip"
+      local URL="https://github.com/AuxXxilium/arc-custom/releases/download/${TAG}/custom-${TAG}.zip"
       echo "Downloading ${TAG}"
       curl -#kL "${URL}" -o "${TMP_PATH}/custom.zip" 2>&1 | while IFS= read -r -n1 char; do
         [[ $char =~ [0-9] ]] && keep=1 ;
@@ -249,7 +249,7 @@ function updateModules() {
     (
       rm -rf "${MODULES_PATH}"
       mkdir -p "${MODULES_PATH}"
-      local URL="https://github.com/AuxXxilium/arc-modules/releases/download/${TAG}/modules.zip"
+      local URL="https://github.com/AuxXxilium/arc-modules/releases/download/${TAG}/modules-${TAG}.zip"
       echo "Downloading Modules ${TAG}"
       curl -#kL "${URL}" -o "${TMP_PATH}/modules.zip" 2>&1 | while IFS= read -r -n1 char; do
         [[ $char =~ [0-9] ]] && keep=1 ;
@@ -303,7 +303,7 @@ function updateConfigs() {
   fi
   if [ -n "${TAG}" ] && [ "${CONFIGSVERSION}" != "${TAG}" ]; then
     (
-      local URL="https://github.com/AuxXxilium/arc-configs/releases/download/${TAG}/configs.zip"
+      local URL="https://github.com/AuxXxilium/arc-configs/releases/download/${TAG}/configs-${TAG}.zip"
       echo "Downloading ${TAG}"
       curl -#kL "${URL}" -o "${TMP_PATH}/configs.zip" 2>&1 | while IFS= read -r -n1 char; do
         [[ $char =~ [0-9] ]] && keep=1 ;
@@ -349,7 +349,7 @@ function updateLKMs() {
   fi
   if [ -n "${TAG}" ] && [ "${LKMVERSION}" != "${TAG}" ]; then
     (
-      local URL="https://github.com/AuxXxilium/arc-lkm/releases/download/${TAG}/rp-lkms.zip"
+      local URL="https://github.com/AuxXxilium/arc-lkm/releases/download/${TAG}/rp-lkms-${TAG}.zip"
       echo "Downloading ${TAG}"
       curl -#kL "${URL}" -o "${TMP_PATH}/rp-lkms.zip" 2>&1 | while IFS= read -r -n1 char; do
         [[ $char =~ [0-9] ]] && keep=1 ;

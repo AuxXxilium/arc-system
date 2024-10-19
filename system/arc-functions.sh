@@ -1771,38 +1771,37 @@ function satadomMenu() {
 ###############################################################################
 # Decrypt Menu
 function decryptMenu() {
-  if [ -f "${S_FILE_ENC}" ]; then
-    CONFIGSVERSION=$(cat "${MODEL_CONFIG_PATH}/VERSION")
-    ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
-    if openssl enc -in "${S_FILE_ENC}" -out "${S_FILE_ARC}" -d -aes-256-cbc -k "${ARCKEY}" 2>/dev/null; then
+  ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
+  if openssl enc -in "${S_FILE_ENC}" -out "${S_FILE_ARC}" -d -aes-256-cbc -k "${ARCKEY}" 2>/dev/null; then
+      dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
+        --msgbox "Decrypt successful: You can select Arc Patch." 5 50
+      mv -f "${S_FILE_ARC}" "${S_FILE}"
+  else
+    while true; do
+      updateConfigs
+      CONFIGSVERSION=$(cat "${MODEL_CONFIG_PATH}/VERSION")
+      cp -f "${S_FILE}" "${S_FILE}.bak"
+      dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
+        --inputbox "Enter Decryption Key for ${CONFIGSVERSION}!\nKey is available in my Discord:\nhttps://discord.auxxxilium.tech" 9 50 2>"${TMP_PATH}/resp"
+      [ $? -ne 0 ] && break
+      ARCKEY=$(cat "${TMP_PATH}/resp")
+      if openssl enc -in "${S_FILE_ENC}" -out "${S_FILE_ARC}" -d -aes-256-cbc -k "${ARCKEY}" 2>/dev/null; then
         dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
           --msgbox "Decrypt successful: You can select Arc Patch." 5 50
         mv -f "${S_FILE_ARC}" "${S_FILE}"
-    else
-      while true; do
-        cp -f "${S_FILE}" "${S_FILE}.bak"
+        writeConfigKey "arc.key" "${ARCKEY}" "${USER_CONFIG_FILE}"
+        ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
+      else
         dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
-          --inputbox "Enter Decryption Key for ${CONFIGSVERSION}!\nKey is available in my Discord:\nhttps://discord.auxxxilium.tech" 9 50 2>"${TMP_PATH}/resp"
-        [ $? -ne 0 ] && break
-        ARCKEY=$(cat "${TMP_PATH}/resp")
-        if openssl enc -in "${S_FILE_ENC}" -out "${S_FILE_ARC}" -d -aes-256-cbc -k "${ARCKEY}" 2>/dev/null; then
-          dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
-            --msgbox "Decrypt successful: You can select Arc Patch." 5 50
-          mv -f "${S_FILE_ARC}" "${S_FILE}"
-          writeConfigKey "arc.key" "${ARCKEY}" "${USER_CONFIG_FILE}"
-          ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
-        else
-          dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
-            --msgbox "Decrypt failed: Wrong Key!" 5 50
-          mv -f "${S_FILE}.bak" "${S_FILE}"
-          writeConfigKey "arc.key" "" "${USER_CONFIG_FILE}"
-          ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
-        fi
-        if [ -n "${ARCKEY}" ]; then
-          break
-        fi
-      done
-    fi
+          --msgbox "Decrypt failed: Wrong Key!" 5 50
+        mv -f "${S_FILE}.bak" "${S_FILE}"
+        writeConfigKey "arc.key" "" "${USER_CONFIG_FILE}"
+        ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
+      fi
+      if [ -n "${ARCKEY}" ]; then
+        break
+      fi
+    done
   fi
   ARCCONF="$(readConfigKey "${MODEL:-SA6400}.serial" "${S_FILE}")"
   writeConfigKey "arc.confdone" "false" "${USER_CONFIG_FILE}"
