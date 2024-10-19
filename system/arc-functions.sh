@@ -1778,7 +1778,6 @@ function decryptMenu() {
       mv -f "${S_FILE_ARC}" "${S_FILE}"
   else
     while true; do
-      updateConfigs
       CONFIGSVERSION=$(cat "${MODEL_CONFIG_PATH}/VERSION")
       cp -f "${S_FILE}" "${S_FILE}.bak"
       dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
