@@ -42,6 +42,11 @@ jobs:
             echo "${VERSION}" >VERSION
           fi
 
+      # Get Offline
+      - name: Offline
+        run: |
+          curl -skL "https://autoupdate.synology.com/os/v2" -o "./system/include/offline.json"
+
       # Zip image
       - name: Pack
         run: |
