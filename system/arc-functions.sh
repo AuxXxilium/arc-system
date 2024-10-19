@@ -896,7 +896,7 @@ function sysinfo() {
   [ -d /sys/firmware/efi ] && BOOTSYS="UEFI" || BOOTSYS="BIOS"
   CPU=$(echo $(cat /proc/cpuinfo 2>/dev/null | grep 'model name' | uniq | awk -F':' '{print $2}'))
   SECURE=$(dmesg 2>/dev/null | grep -i "Secure Boot" | awk -F'] ' '{print $2}')
-  VENDOR=$(dmesg 2>/dev/null | grep -i "DMI:" | sed 's/\[.*\] DMI: //i')
+  VENDOR=$(dmesg 2>/dev/null | grep -i "DMI:" | head -1 | sed 's/\[.*\] DMI: //i')
   ETHX="$(ls /sys/class/net 2>/dev/null | grep eth)"
   ETHN="$(echo ${ETHX} | wc -w)"
   ARC_BRANCH="$(readConfigKey "arc.branch" "${USER_CONFIG_FILE}")"
@@ -957,7 +957,7 @@ function sysinfo() {
   TEXT+="\n  Secure Boot: \Zb${SECURE}\Zn"
   TEXT+="\n  Bootdisk: \Zb${LOADER_DISK}\Zn"
   TEXT+="\n"
-  TEXT+="\n\Z4> Network: ${ETHN} NIC\Zn\n"
+  TEXT+="\n\Z4> Network: ${ETHN} NIC\Zn"
   for ETH in ${ETHX}; do
     COUNT=0
     DRIVER=$(ls -ld /sys/class/net/${ETH}/device/driver 2>/dev/null | awk -F '/' '{print $NF}')
@@ -979,9 +979,9 @@ function sysinfo() {
       if [ -n "${IP}" ]; then
         SPEED=$(ethtool ${ETH} 2>/dev/null | grep "Speed:" | awk '{print $2}')
         if [[ "${IP}" =~ ^169\.254\..* ]]; then
-          TEXT+="${DRIVER} (${SPEED}): \ZbLINK LOCAL (No DHCP server found.)\Zn"
+          TEXT+="\n${DRIVER} (${SPEED}): \ZbLINK LOCAL (No DHCP server found.)\Zn"
         else
-          TEXT+="${DRIVER} (${SPEED}): \Zb${IP}\Zn"
+          TEXT+="\n${DRIVER} (${SPEED}): \Zb${IP}\Zn"
         fi
         break
       fi
@@ -989,7 +989,7 @@ function sysinfo() {
     done
   done
   # Print Config Informations
-  TEXT+="\n\Z4> Arc: ${ARC_VERSION}\Zn"
+  TEXT+="\n\n\Z4> Arc: ${ARC_VERSION}\Zn"
   TEXT+="\n  Base: \Zb${ARC_BASE_VERSION}\Zn"
   TEXT+="\n  Branch: \Zb${ARC_BRANCH}\Zn"
   TEXT+="\n  Config | Build: \Zb${CONFDONE} | ${BUILDDONE}\Zn"
