@@ -724,7 +724,8 @@ function make() {
   PAT_HASH="$(readConfigKey "pathash" "${USER_CONFIG_FILE}")"
   # Check for Arc Patch
   ARCCONF="$(readConfigKey "${MODEL}.serial" "${S_FILE}")"
-  if [ -z "${ARCCONF}" ]; then
+  ARCPATCH="$(readConfigKey "arc.patch" "${USER_CONFIG_FILE}")"
+  if [ -z "${ARCCONF}" ] && [ "${ARCPATCH}" == "true" ]; then
     deleteConfigKey "addons.amepatch" "${USER_CONFIG_FILE}"
     deleteConfigKey "addons.arcdns" "${USER_CONFIG_FILE}"
     deleteConfigKey "addons.sspatch" "${USER_CONFIG_FILE}"
@@ -1037,7 +1038,6 @@ else
           ODP="false"
           writeConfigKey "odp" "${ODP}" "${USER_CONFIG_FILE}"
         fi
-        updateCustom
         PLATFORM="$(readConfigKey "platform" "${USER_CONFIG_FILE}")"
         PRODUCTVER="$(readConfigKey "productver" "${USER_CONFIG_FILE}")"
         KVER="$(readConfigKey "platforms.${PLATFORM}.productvers.\"${PRODUCTVER}\".kver" "${P_FILE}")"
