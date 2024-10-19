@@ -1904,9 +1904,9 @@ function mountDSM() {
     umount "${I}" 2>/dev/null
     mount ${I} "/mnt/DSM/${NAME}" -o ro
   done
-  MSG="All storage pools are mounted under /mnt/DSM. Please check them yourself via shell/DUFS."
+  MSG="Storage pools are mounted under /mnt/DSM.\nPlease check them via ${IPCON}:7304."
   dialog --backtitle "$(backtitle)" --title "Mount DSM Pool" \
-    --msgbox "${MSG}" 0 0
+    --msgbox "${MSG}" 7 50
   return
 }
 
