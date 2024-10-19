@@ -316,4 +316,3 @@ elif [ "${DIRECTBOOT}" == "false" ]; then
   # Boot to DSM
   [ "${KERNELLOAD}" == "kexec" ] && exec kexec -e || exec poweroff
 fi
-exit 0

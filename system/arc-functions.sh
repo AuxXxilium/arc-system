@@ -1924,8 +1924,8 @@ function governorSelection () {
   if [ "${ARCMODE}" == "config" ]; then
     # Selectable CPU governors
     [ "${PLATFORM}" == "epyc7002" ] && echo -e "schedutil \"use schedutil to scale frequency *\"" >>"${TMP_PATH}/opts"
-    [ "${PLATFORM}" != "epyc7002" ] && echo -e "ondemand \"use ondemand to scale frequency\"" >>"${TMP_PATH}/opts"
-    [ "${PLATFORM}" != "epyc7002" ] && echo -e "conservative \"use conservative to scale frequency *\"" >>"${TMP_PATH}/opts"
+    [ "${PLATFORM}" != "epyc7002" ] && echo -e "ondemand \"use ondemand to scale frequency *\"" >>"${TMP_PATH}/opts"
+    [ "${PLATFORM}" != "epyc7002" ] && echo -e "conservative \"use conservative to scale frequency\"" >>"${TMP_PATH}/opts"
     echo -e "performance \"always run at max frequency\"" >>"${TMP_PATH}/opts"
     echo -e "powersave \"always run at lowest frequency\"" >>"${TMP_PATH}/opts"
     dialog --backtitle "$(backtitle)" --title "CPU Frequency Scaling" \
@@ -1937,7 +1937,7 @@ function governorSelection () {
     CPUGOVERNOR=${resp}
   else
     [ "${PLATFORM}" == "epyc7002" ] && CPUGOVERNOR="schedutil"
-    [ "${PLATFORM}" != "epyc7002" ] && CPUGOVERNOR="conservative"
+    [ "${PLATFORM}" != "epyc7002" ] && CPUGOVERNOR="ondemand"
   fi
   writeConfigKey "addons.cpufreqscaling" "${CPUGOVERNOR}" "${USER_CONFIG_FILE}"
   CPUGOVERNOR="$(readConfigKey "addons.cpufreqscaling" "${USER_CONFIG_FILE}")"
