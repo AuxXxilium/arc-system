@@ -349,7 +349,7 @@ function updateLKMs() {
   fi
   if [ -n "${TAG}" ] && [ "${LKMVERSION}" != "${TAG}" ]; then
     (
-      local URL="https://github.com/AuxXxilium/arc-lkm/releases/download/${TAG}/rp-lkms-${TAG}.zip"
+      local URL="https://github.com/AuxXxilium/arc-lkm/releases/download/${TAG}/rp-lkms.zip"
       echo "Downloading ${TAG}"
       curl -#kL "${URL}" -o "${TMP_PATH}/rp-lkms.zip" 2>&1 | while IFS= read -r -n1 char; do
         [[ $char =~ [0-9] ]] && keep=1 ;
