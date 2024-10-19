@@ -739,7 +739,7 @@ function make() {
       livepatch
       sleep 3
     ) 2>&1 | dialog --backtitle "$(backtitle)" --colors --title "Build Loader" \
-      --progressbox "Doing the Magic..." 20 70
+      --progressbox "Magical things happen..." 20 70
   else
     dialog --backtitle "$(backtitle)" --title "Build Loader" --aspect 18 \
       --infobox "Configuration issue found.\nCould not build Loader!\nExit." 5 40
