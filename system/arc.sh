@@ -34,7 +34,7 @@ fi
 # Get Arc Data from Config
 ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
 ARCPATCH="$(readConfigKey "arc.patch" "${USER_CONFIG_FILE}")"
-ARCCONF="$(readConfigKey "${MODEL}.serial" "${S_FILE}")"
+ARCCONF="$(readConfigKey "${MODEL:-SA6400}.serial" "${S_FILE}")"
 BOOTIPWAIT="$(readConfigKey "bootipwait" "${USER_CONFIG_FILE}")"
 DIRECTBOOT="$(readConfigKey "directboot" "${USER_CONFIG_FILE}")"
 EMMCBOOT="$(readConfigKey "emmcboot" "${USER_CONFIG_FILE}")"
@@ -324,7 +324,6 @@ function arcVersion() {
     else
       ARCMODE="config"
     fi
-    writeConfigKey "arc.mode" "${ARCMODE}" "${USER_CONFIG_FILE}"
     # Check PAT URL
     dialog --backtitle "$(backtitle)" --colors --title "DSM Version" \
       --infobox "Check PAT Data..." 3 40
@@ -362,9 +361,6 @@ function arcVersion() {
     ADDONS="$(readConfigKey "addons" "${USER_CONFIG_FILE}")"
     DEVICENIC="$(readConfigKey "device.nic" "${USER_CONFIG_FILE}")"
     ARCCONF="$(readConfigKey "${MODEL}.serial" "${S_FILE}")"
-    if [ "${ARC_BRANCH}" == "minimal" ]; then
-      updateAddons
-    fi
     if [ "${ADDONS}" == "{}" ]; then
       initConfigKey "addons.acpid" "" "${USER_CONFIG_FILE}"
       initConfigKey "addons.cpuinfo" "" "${USER_CONFIG_FILE}"
@@ -401,20 +397,14 @@ function arcVersion() {
         deleteConfigKey "addons.\"${ADDON}\"" "${USER_CONFIG_FILE}"
       fi
     done < <(readConfigMap "addons" "${USER_CONFIG_FILE}")
-    if [ "${ARC_BRANCH}" == "minimal" ]; then
-      updateModules
-    else
-      PRODUCTVER="$(readConfigKey "productver" "${USER_CONFIG_FILE}")"
-      PLATFORM="$(readConfigKey "platform" "${USER_CONFIG_FILE}")"
-      KVER="$(readConfigKey "platforms.${PLATFORM}.productvers.\"${PRODUCTVER}\".kver" "${P_FILE}")"
-      [ "${PLATFORM}" == "epyc7002" ] && KVERP="${PRODUCTVER}-${KVER}" || KVERP="${KVER}"
-      if [ -n "${PLATFORM}" ] && [ -n "${KVERP}" ]; then
-        writeConfigKey "modules" "{}" "${USER_CONFIG_FILE}"
-        echo "Rebuilding Modules..."
-        while read -r ID DESC; do
-          writeConfigKey "modules.${ID}" "" "${USER_CONFIG_FILE}"
-        done < <(getAllModules "${PLATFORM}" "${KVERP}")
-      fi
+    KVER="$(readConfigKey "platforms.${PLATFORM}.productvers.\"${PRODUCTVER}\".kver" "${P_FILE}")"
+    [ "${PLATFORM}" == "epyc7002" ] && KVERP="${PRODUCTVER}-${KVER}" || KVERP="${KVER}"
+    if [ -n "${PLATFORM}" ] && [ -n "${KVERP}" ]; then
+      writeConfigKey "modules" "{}" "${USER_CONFIG_FILE}"
+      echo "Rebuilding Modules..."
+      while read -r ID DESC; do
+        writeConfigKey "modules.${ID}" "" "${USER_CONFIG_FILE}"
+      done < <(getAllModules "${PLATFORM}" "${KVERP}")
     fi
     # Check for Only Version
     if [ "${ONLYVERSION}" == "true" ]; then
@@ -744,10 +734,6 @@ function make() {
   # Max Memory for DSM
   RAMCONFIG="$((${RAMTOTAL} * 1024 * 2))"
   writeConfigKey "synoinfo.mem_max_mb" "${RAMCONFIG}" "${USER_CONFIG_FILE}"
-  if [ "${ARC_BRANCH}" == "minimal" ]; then
-    updateLKMs
-    updatePatches
-  fi
   getpatfiles    
   if [ -f "${ORI_ZIMAGE_FILE}" ] && [ -f "${ORI_RDGZ_FILE}" ] && [ "${CONFDONE}" == "true" ] && [ -n "${PAT_URL}" ] && [ -n "${PAT_HASH}" ]; then
     (
@@ -863,7 +849,7 @@ else
   fi
   while true; do
     echo "= \"\Z4========== Main ==========\Zn \" "                                            >"${TMP_PATH}/menu"
-    if [ -z "${ARCCONF}" ] && [ ! -f "${S_FILE_ENC}" ]; then
+    if [ -z "${ARCCONF}" ]; then
       echo "0 \"Enable Arc Patch\" "                                                          >>"${TMP_PATH}/menu"
     fi
     echo "1 \"Choose Model \" "                                                               >>"${TMP_PATH}/menu"

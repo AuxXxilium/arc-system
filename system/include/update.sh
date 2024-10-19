@@ -29,9 +29,7 @@ function updateLoader() {
       done
       if [ -f "${TMP_PATH}/update.zip" ]; then
         echo -e "Downloading ${TAG}-${ARC_BRANCH} Loader successful!\nUpdating ${ARC_BRANCH} Loader..."
-        if unzip -oq "${TMP_PATH}/update.zip" -d "${PART3_PATH}"; then
-          echo "${TAG}" > "${PART1_PATH}/ARC-BASE-VERSION"
-          echo "${TAG}" > "${PART1_PATH}/ARC-VERSION"
+        if unzip -oq "${TMP_PATH}/update.zip" -d "/mnt"; then
           echo "Successful!"
           sleep 2
         else
@@ -110,7 +108,7 @@ function updateAddons() {
   if [ -n "${TAG}" ] && [ "${ADDONSVERSION}" != "${TAG}" ]; then
     (
       echo "Downloading ${TAG}"
-      local URL="https://github.com/AuxXxilium/arc-addons/releases/download/${TAG}/addons.zip"
+      local URL="https://github.com/AuxXxilium/arc-addons/releases/download/${TAG}/addons-${TAG}.zip"
       curl -#kL "${URL}" -o "${TMP_PATH}/addons.zip" 2>&1 | while IFS= read -r -n1 char; do
         [[ $char =~ [0-9] ]] && keep=1 ;
         [[ $char == % ]] && echo "$progress%" && progress="" && keep=0 ;
@@ -159,7 +157,7 @@ function updatePatches() {
   done
   if [ -n "${TAG}" ] && [ "${PATCHESVERSION}" != "${TAG}" ]; then
     (
-      local URL="https://github.com/AuxXxilium/arc-patches/releases/download/${TAG}/patches.zip"
+      local URL="https://github.com/AuxXxilium/arc-patches/releases/download/${TAG}/patches-${TAG}.zip"
       echo "Downloading ${TAG}"
       curl -#kL "${URL}" -o "${TMP_PATH}/patches.zip" 2>&1 | while IFS= read -r -n1 char; do
         [[ $char =~ [0-9] ]] && keep=1 ;
@@ -202,7 +200,7 @@ function updateCustom() {
   done
   if [ -n "${TAG}" ] && [ "${CUSTOMVERSION}" != "${TAG}" ]; then
     (
-      local URL="https://github.com/AuxXxilium/arc-custom/releases/download/${TAG}/custom.zip"
+      local URL="https://github.com/AuxXxilium/arc-custom/releases/download/${TAG}/custom-${TAG}.zip"
       echo "Downloading ${TAG}"
       curl -#kL "${URL}" -o "${TMP_PATH}/custom.zip" 2>&1 | while IFS= read -r -n1 char; do
         [[ $char =~ [0-9] ]] && keep=1 ;
@@ -247,11 +245,11 @@ function updateModules() {
     sleep 3
     idx=$((${idx} + 1))
   done
-  if [[ -n "${TAG}" && "${MODULESVERSION}" != "${TAG}" ]] || [ ! -f "${MODULES_PATH}/${PLATFORM}-${KVERP}.modules" ]; then
+  if [ -n "${TAG}" ] && [[ "${MODULESVERSION}" != "${TAG}" || ! -f "${MODULES_PATH}/${PLATFORM}-${KVERP}.tgz" ]]; then
     (
       rm -rf "${MODULES_PATH}"
       mkdir -p "${MODULES_PATH}"
-      local URL="https://github.com/AuxXxilium/arc-modules/releases/download/${TAG}/modules.zip"
+      local URL="https://github.com/AuxXxilium/arc-modules/releases/download/${TAG}/modules-${TAG}.zip"
       echo "Downloading Modules ${TAG}"
       curl -#kL "${URL}" -o "${TMP_PATH}/modules.zip" 2>&1 | while IFS= read -r -n1 char; do
         [[ $char =~ [0-9] ]] && keep=1 ;
@@ -271,15 +269,12 @@ function updateModules() {
         sleep 5
         updateFailed
       fi
-      if [ -f "${MODULES_PATH}/${PLATFORM}-${KVERP}.modules" ] && [ -f "${MODULES_PATH}/firmware.modules" ]; then
-        echo "${TAG}" > "${MODULES_PATH}/VERSION"
-        if [ -n "${PLATFORM}" ] && [ -n "${KVERP}" ]; then
-          writeConfigKey "modules" "{}" "${USER_CONFIG_FILE}"
-          echo "Rebuilding Modules..."
-          while read -r ID DESC; do
-            writeConfigKey "modules.${ID}" "" "${USER_CONFIG_FILE}"
-          done < <(getAllModules "${PLATFORM}" "${KVERP}")
-        fi
+      if [ -f "${MODULES_PATH}/${PLATFORM}-${KVERP}.tgz" ] && [ -f "${MODULES_PATH}/firmware.tgz" ]; then
+        writeConfigKey "modules" "{}" "${USER_CONFIG_FILE}"
+        echo "Rebuilding Modules..."
+        while read -r ID DESC; do
+          writeConfigKey "modules.${ID}" "" "${USER_CONFIG_FILE}"
+        done < <(getAllModules "${PLATFORM}" "${KVERP}")
         echo "Successful!"
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Modules" \
@@ -308,7 +303,7 @@ function updateConfigs() {
   fi
   if [ -n "${TAG}" ] && [ "${CONFIGSVERSION}" != "${TAG}" ]; then
     (
-      local URL="https://github.com/AuxXxilium/arc-configs/releases/download/${TAG}/configs.zip"
+      local URL="https://github.com/AuxXxilium/arc-configs/releases/download/${TAG}/configs-${TAG}.zip"
       echo "Downloading ${TAG}"
       curl -#kL "${URL}" -o "${TMP_PATH}/configs.zip" 2>&1 | while IFS= read -r -n1 char; do
         [[ $char =~ [0-9] ]] && keep=1 ;
@@ -354,7 +349,7 @@ function updateLKMs() {
   fi
   if [ -n "${TAG}" ] && [ "${LKMVERSION}" != "${TAG}" ]; then
     (
-      local URL="https://github.com/AuxXxilium/arc-lkm/releases/download/${TAG}/rp-lkms.zip"
+      local URL="https://github.com/AuxXxilium/arc-lkm/releases/download/${TAG}/rp-lkms-${TAG}.zip"
       echo "Downloading ${TAG}"
       curl -#kL "${URL}" -o "${TMP_PATH}/rp-lkms.zip" 2>&1 | while IFS= read -r -n1 char; do
         [[ $char =~ [0-9] ]] && keep=1 ;
@@ -391,6 +386,8 @@ function arcUpdate() {
   dialog --backtitle "$(backtitle)" --title "Update Dependencies" --aspect 18 \
     --infobox "Updating Dependencies..." 0 0
   sleep 3
+  updateSystem
+  [ $? -ne 0 ] && FAILED="true"
   updateAddons
   [ $? -ne 0 ] && FAILED="true"
   updateModules

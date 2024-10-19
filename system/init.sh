@@ -209,22 +209,8 @@ mkdir -p "${LKMS_PATH}"
 mkdir -p "${MODEL_CONFIG_PATH}"
 mkdir -p "${MODULES_PATH}"
 mkdir -p "${PATCH_PATH}"
+mkdir -p "${SYSTEM_PATH}"
 mkdir -p "${USER_UP_PATH}"
-
-# Download Arc System Files
-if [ "${ARCMODE}" == "automated" ] && [ -f "${SYSTEM_PATH}/arc.sh" ]; then
-  echo -e "\033[1;34mUsing preloaded Arc System Files...\033[0m"
-elif [ -n "${IPCON}" ] && [ "${ARC_BRANCH}" == "dev" ]; then
-  echo -e "\033[1;34mDownloading Arc System Development...\033[0m"
-  updateSystem
-elif [ -n "${IPCON}" ] && [ "${ARC_BRANCH}" == "minimal" ]; then
-  echo -e "\033[1;34mDownloading Arc System Files...\033[0m"
-  updateSystem
-  [ ! -f "${SYSTEM_PATH}/arc.sh" ] && echo -e "\033[1;31mError: Can't get Arc System Files...\033[0m" && exit 1
-elif [ ! -f "${SYSTEM_PATH}/arc.sh" ] && [ -z "${IPCON}" ]; then
-  echo -e "\033[1;31mNo Network Connection found!\033[0m\n\033[1;31mError: Arc will not work...\033[0m"
-  exit 1
-fi
 
 # Load Arc Overlay
 echo -e "\033[1;34mLoading Arc Overlay...\033[0m"
