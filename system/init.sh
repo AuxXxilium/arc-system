@@ -216,10 +216,10 @@ if [ "${ARCMODE}" == "automated" ] && [ -f "${SYSTEM_PATH}/arc.sh" ]; then
   echo -e "\033[1;34mUsing preloaded Arc System Files...\033[0m"
 elif [ -n "${IPCON}" ] && [ "${ARC_BRANCH}" == "dev" ]; then
   echo -e "\033[1;34mDownloading Arc System Development...\033[0m"
-  getArcSystem "dev"
+  updateSystem
 elif [ -n "${IPCON}" ] && [ "${ARC_BRANCH}" == "minimal" ]; then
   echo -e "\033[1;34mDownloading Arc System Files...\033[0m"
-  getArcSystem
+  updateSystem
   [ ! -f "${SYSTEM_PATH}/arc.sh" ] && echo -e "\033[1;31mError: Can't get Arc System Files...\033[0m" && exit 1
 elif [ ! -f "${SYSTEM_PATH}/arc.sh" ] && [ -z "${IPCON}" ]; then
   echo -e "\033[1;31mNo Network Connection found!\033[0m\n\033[1;31mError: Arc will not work...\033[0m"
