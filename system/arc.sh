@@ -34,7 +34,7 @@ fi
 # Get Arc Data from Config
 ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
 ARCPATCH="$(readConfigKey "arc.patch" "${USER_CONFIG_FILE}")"
-ARCCONF="$(readConfigKey "${MODEL}.serial" "${S_FILE}")"
+ARCCONF="$(readConfigKey "${MODEL:-SA6400}.serial" "${S_FILE}")"
 BOOTIPWAIT="$(readConfigKey "bootipwait" "${USER_CONFIG_FILE}")"
 DIRECTBOOT="$(readConfigKey "directboot" "${USER_CONFIG_FILE}")"
 EMMCBOOT="$(readConfigKey "emmcboot" "${USER_CONFIG_FILE}")"
