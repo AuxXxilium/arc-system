@@ -796,11 +796,12 @@ function arcFinish() {
 ###############################################################################
 # Calls boot.sh to boot into DSM Reinstall Mode
 function juniorboot() {
-  BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
-  [ "${BUILDDONE}" == "false" ] && dialog --backtitle "$(backtitle)" --title "Alert" \
-    --yesno "Config changed, please build Loader first." 0 0
-  if [ $? -eq 0 ]; then
-    make
+  if [ "${BUILDDONE}" == "false" ] && [ "${ARCMODE}" != "automated" ]; then
+    dialog --backtitle "$(backtitle)" --title "Alert" \
+      --yesno "Config changed, you need to rebuild the Loader?" 0 0
+    if [ $? -eq 0 ]; then
+      arcSummary
+    fi
   fi
   dialog --backtitle "$(backtitle)" --title "Arc Boot" \
     --infobox "Booting DSM Reinstall Mode...\nPlease stay patient!" 4 30
@@ -812,16 +813,18 @@ function juniorboot() {
 # Calls boot.sh to boot into DSM kernel/ramdisk
 function boot() {
   BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
-  [ "${BUILDDONE}" == "false" ] && dialog --backtitle "$(backtitle)" --title "Alert" \
-    --yesno "Config changed, you need to rebuild the Loader?" 0 0
-  if [ $? -eq 0 ]; then
-    arcSummary
+  if [ "${BUILDDONE}" == "false" ] && [ "${ARCMODE}" != "automated" ]; then
+    dialog --backtitle "$(backtitle)" --title "Alert" \
+      --yesno "Config changed, you need to rebuild the Loader?" 0 0
+    if [ $? -eq 0 ]; then
+      arcSummary
+    fi
   fi
   dialog --backtitle "$(backtitle)" --title "Arc Boot" \
     --infobox "Booting DSM...\nPlease stay patient!" 4 25
   sleep 2
-  exec reboot
-  exit 0
+  clear
+  boot.sh
 }
 
 ###############################################################################
@@ -964,7 +967,7 @@ else
       # Main Section
       0) decryptMenu; NEXT="0" ;;
       1) arcModel; NEXT="2" ;;
-      2) make; NEXT="3" ;;
+      2) arcSummary; NEXT="3" ;;
       3) boot; NEXT="3" ;;
       # Info Section
       a) sysinfo; NEXT="a" ;;

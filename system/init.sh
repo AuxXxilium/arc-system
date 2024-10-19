@@ -10,6 +10,7 @@ set -e
 [ -z "${LOADER_DISK}" ] && die "Loader Disk not found!"
 checkBootLoader || die "The loader is corrupted, please rewrite it!"
 BUS=$(getBus "${LOADER_DISK}")
+[ ! -f /var/run/dhcpcd/pid ] && /etc/init.d/S41dhcpcd restart >/dev/null 2>&1 || true
 
 # Check if machine has EFI
 [ -d /sys/firmware/efi ] && EFI=1 || EFI=0
