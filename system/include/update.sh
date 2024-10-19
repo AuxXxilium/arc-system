@@ -247,7 +247,7 @@ function updateModules() {
     sleep 3
     idx=$((${idx} + 1))
   done
-  if [[ -n "${TAG}" && "${MODULESVERSION}" != "${TAG}" ]] || [ ! -f "${MODULES_PATH}/${PLATFORM}-${KVERP}.modules" ]; then
+  if [ -n "${TAG}" ] && [[ "${MODULESVERSION}" != "${TAG}" || ! -f "${MODULES_PATH}/${PLATFORM}-${KVERP}.modules" ]]; then
     (
       rm -rf "${MODULES_PATH}"
       mkdir -p "${MODULES_PATH}"
