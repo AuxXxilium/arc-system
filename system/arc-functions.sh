@@ -1838,7 +1838,7 @@ function rebootMenu() {
   dialog --backtitle "$(backtitle)" --title "Power Menu" \
     --infobox "Option: ${REDEST} selected ...!" 3 50
   if [ "${REDEST}" == "poweroff" ]; then
-    poweroff
+    exec poweroff
     exit 0
   elif [ "${REDEST}" == "shell" ]; then
     clear
@@ -1846,7 +1846,7 @@ function rebootMenu() {
   elif [ "${REDEST}" == "network" ]; then
     clear
     /etc/init.d/S41dhcpcd restart
-    init.sh
+    exec init.sh
   else
     rebootTo ${REDEST}
     exit 0
