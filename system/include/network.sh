@@ -29,7 +29,7 @@ function getnet() {
         [ $? -ne 0 ] && break
         MAC=$(cat "${TMP_PATH}/resp")
         [ -z "${MAC}" ] && MAC="$(readConfigKey "${ETH}" "${USER_CONFIG_FILE}")"
-        [ -z "${MAC}" ] && MAC="$(cat /sys/class/net/${ETH}/address 2>/dev/null | sed 's/://g' | tr '[:upper:]' '[:lower:]')"
+        [ -z "${MAC}" ] && MAC="$(cat /sys/class/net/${ETH}/address 2>/dev/null | sed 's/://g')"
         MAC="$(echo "${MAC}" | tr '[:upper:]' '[:lower:]')"
         if [ ${#MAC} -eq 12 ]; then
           writeConfigKey "${ETH}" "${MAC}" "${USER_CONFIG_FILE}"

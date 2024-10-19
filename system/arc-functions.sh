@@ -1778,7 +1778,6 @@ function decryptMenu() {
       mv -f "${S_FILE_ARC}" "${S_FILE}"
   else
     while true; do
-      updateConfigs
       CONFIGSVERSION=$(cat "${MODEL_CONFIG_PATH}/VERSION")
       cp -f "${S_FILE}" "${S_FILE}.bak"
       dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
@@ -1838,7 +1837,7 @@ function rebootMenu() {
   dialog --backtitle "$(backtitle)" --title "Power Menu" \
     --infobox "Option: ${REDEST} selected ...!" 3 50
   if [ "${REDEST}" == "poweroff" ]; then
-    poweroff
+    exec poweroff
     exit 0
   elif [ "${REDEST}" == "shell" ]; then
     clear
@@ -1846,7 +1845,7 @@ function rebootMenu() {
   elif [ "${REDEST}" == "network" ]; then
     clear
     /etc/init.d/S41dhcpcd restart
-    init.sh
+    exec init.sh
   else
     rebootTo ${REDEST}
     exit 0
