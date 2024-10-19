@@ -324,7 +324,6 @@ function arcVersion() {
     else
       ARCMODE="config"
     fi
-    writeConfigKey "arc.mode" "${ARCMODE}" "${USER_CONFIG_FILE}"
     # Check PAT URL
     dialog --backtitle "$(backtitle)" --colors --title "DSM Version" \
       --infobox "Check PAT Data..." 3 40
