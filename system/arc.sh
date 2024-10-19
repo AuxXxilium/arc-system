@@ -361,9 +361,6 @@ function arcVersion() {
     ADDONS="$(readConfigKey "addons" "${USER_CONFIG_FILE}")"
     DEVICENIC="$(readConfigKey "device.nic" "${USER_CONFIG_FILE}")"
     ARCCONF="$(readConfigKey "${MODEL}.serial" "${S_FILE}")"
-    if [ "${ARC_BRANCH}" == "minimal" ]; then
-      updateAddons
-    fi
     if [ "${ADDONS}" == "{}" ]; then
       initConfigKey "addons.acpid" "" "${USER_CONFIG_FILE}"
       initConfigKey "addons.cpuinfo" "" "${USER_CONFIG_FILE}"
@@ -400,20 +397,14 @@ function arcVersion() {
         deleteConfigKey "addons.\"${ADDON}\"" "${USER_CONFIG_FILE}"
       fi
     done < <(readConfigMap "addons" "${USER_CONFIG_FILE}")
-    if [ "${ARC_BRANCH}" == "minimal" ]; then
-      updateModules
-    else
-      PRODUCTVER="$(readConfigKey "productver" "${USER_CONFIG_FILE}")"
-      PLATFORM="$(readConfigKey "platform" "${USER_CONFIG_FILE}")"
-      KVER="$(readConfigKey "platforms.${PLATFORM}.productvers.\"${PRODUCTVER}\".kver" "${P_FILE}")"
-      [ "${PLATFORM}" == "epyc7002" ] && KVERP="${PRODUCTVER}-${KVER}" || KVERP="${KVER}"
-      if [ -n "${PLATFORM}" ] && [ -n "${KVERP}" ]; then
-        writeConfigKey "modules" "{}" "${USER_CONFIG_FILE}"
-        echo "Rebuilding Modules..."
-        while read -r ID DESC; do
-          writeConfigKey "modules.${ID}" "" "${USER_CONFIG_FILE}"
-        done < <(getAllModules "${PLATFORM}" "${KVERP}")
-      fi
+    KVER="$(readConfigKey "platforms.${PLATFORM}.productvers.\"${PRODUCTVER}\".kver" "${P_FILE}")"
+    [ "${PLATFORM}" == "epyc7002" ] && KVERP="${PRODUCTVER}-${KVER}" || KVERP="${KVER}"
+    if [ -n "${PLATFORM}" ] && [ -n "${KVERP}" ]; then
+      writeConfigKey "modules" "{}" "${USER_CONFIG_FILE}"
+      echo "Rebuilding Modules..."
+      while read -r ID DESC; do
+        writeConfigKey "modules.${ID}" "" "${USER_CONFIG_FILE}"
+      done < <(getAllModules "${PLATFORM}" "${KVERP}")
     fi
     # Check for Only Version
     if [ "${ONLYVERSION}" == "true" ]; then
@@ -743,10 +734,6 @@ function make() {
   # Max Memory for DSM
   RAMCONFIG="$((${RAMTOTAL} * 1024 * 2))"
   writeConfigKey "synoinfo.mem_max_mb" "${RAMCONFIG}" "${USER_CONFIG_FILE}"
-  if [ "${ARC_BRANCH}" == "minimal" ]; then
-    updateLKMs
-    updatePatches
-  fi
   getpatfiles    
   if [ -f "${ORI_ZIMAGE_FILE}" ] && [ -f "${ORI_RDGZ_FILE}" ] && [ "${CONFDONE}" == "true" ] && [ -n "${PAT_URL}" ] && [ -n "${PAT_HASH}" ]; then
     (

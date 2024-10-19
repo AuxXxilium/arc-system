@@ -29,9 +29,7 @@ function updateLoader() {
       done
       if [ -f "${TMP_PATH}/update.zip" ]; then
         echo -e "Downloading ${TAG}-${ARC_BRANCH} Loader successful!\nUpdating ${ARC_BRANCH} Loader..."
-        if unzip -oq "${TMP_PATH}/update.zip" -d "${PART3_PATH}"; then
-          echo "${TAG}" > "${PART1_PATH}/ARC-BASE-VERSION"
-          echo "${TAG}" > "${PART1_PATH}/ARC-VERSION"
+        if unzip -oq "${TMP_PATH}/update.zip" -d "/mnt"; then
           echo "Successful!"
           sleep 2
         else
@@ -247,7 +245,7 @@ function updateModules() {
     sleep 3
     idx=$((${idx} + 1))
   done
-  if [ -n "${TAG}" ] && [[ "${MODULESVERSION}" != "${TAG}" || ! -f "${MODULES_PATH}/${PLATFORM}-${KVERP}.modules" ]]; then
+  if [ -n "${TAG}" ] && [[ "${MODULESVERSION}" != "${TAG}" || ! -f "${MODULES_PATH}/${PLATFORM}-${KVERP}.tgz" ]]; then
     (
       rm -rf "${MODULES_PATH}"
       mkdir -p "${MODULES_PATH}"
@@ -271,15 +269,12 @@ function updateModules() {
         sleep 5
         updateFailed
       fi
-      if [ -f "${MODULES_PATH}/${PLATFORM}-${KVERP}.modules" ] && [ -f "${MODULES_PATH}/firmware.modules" ]; then
-        echo "${TAG}" > "${MODULES_PATH}/VERSION"
-        if [ -n "${PLATFORM}" ] && [ -n "${KVERP}" ]; then
-          writeConfigKey "modules" "{}" "${USER_CONFIG_FILE}"
-          echo "Rebuilding Modules..."
-          while read -r ID DESC; do
-            writeConfigKey "modules.${ID}" "" "${USER_CONFIG_FILE}"
-          done < <(getAllModules "${PLATFORM}" "${KVERP}")
-        fi
+      if [ -f "${MODULES_PATH}/${PLATFORM}-${KVERP}.tgz" ] && [ -f "${MODULES_PATH}/firmware.tgz" ]; then
+        writeConfigKey "modules" "{}" "${USER_CONFIG_FILE}"
+        echo "Rebuilding Modules..."
+        while read -r ID DESC; do
+          writeConfigKey "modules.${ID}" "" "${USER_CONFIG_FILE}"
+        done < <(getAllModules "${PLATFORM}" "${KVERP}")
         echo "Successful!"
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Modules" \

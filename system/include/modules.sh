@@ -17,7 +17,7 @@ function getAllModules() {
   if [ "${KERNEL}" == "custom" ]; then
     tar -zxf "${CUSTOM_PATH}/modules-${PLATFORM}-${KVER}.tgz" -C "${TMP_PATH}/modules"
   else
-    tar -zxf "${MODULES_PATH}/${PLATFORM}-${KVER}.modules" -C "${TMP_PATH}/modules"
+    tar -zxf "${MODULES_PATH}/${PLATFORM}-${KVER}.tgz" -C "${TMP_PATH}/modules"
   fi
   # Get list of all modules
   for F in $(ls ${TMP_PATH}/modules/*.ko 2>/dev/null); do
@@ -52,7 +52,7 @@ function installModules() {
   if [ "${KERNEL}" == "custom" ]; then
     tar -zxf "${CUSTOM_PATH}/modules-${PLATFORM}-${KVER}.tgz" -C "${TMP_PATH}/modules" 2>"${LOG_FILE}"
   else
-    tar -zxf "${MODULES_PATH}/${PLATFORM}-${KVER}.modules" -C "${TMP_PATH}/modules" 2>"${LOG_FILE}"
+    tar -zxf "${MODULES_PATH}/${PLATFORM}-${KVER}.tgz" -C "${TMP_PATH}/modules" 2>"${LOG_FILE}"
   fi
   if [ $? -ne 0 ]; then
     return 1
@@ -72,7 +72,7 @@ function installModules() {
   if [ "${KERNEL}" == "custom" ]; then
     tar -zxf "${CUSTOM_PATH}/firmware.tgz" -C "${RAMDISK_PATH}/usr/lib/firmware" 2>"${LOG_FILE}"
   else
-    tar -zxf "${MODULES_PATH}/firmware.modules" -C "${RAMDISK_PATH}/usr/lib/firmware" 2>"${LOG_FILE}"
+    tar -zxf "${MODULES_PATH}/firmware.tgz" -C "${RAMDISK_PATH}/usr/lib/firmware" 2>"${LOG_FILE}"
   fi
   if [ $? -ne 0 ]; then
     return 1
@@ -104,13 +104,13 @@ function addToModules() {
   if [ "${KERNEL}" == "custom" ]; then
     tar -zxf "${CUSTOM_PATH}/modules-${PLATFORM}-${KVER}.tgz" -C "${TMP_PATH}/modules"
   else
-    tar -zxf "${MODULES_PATH}/${PLATFORM}-${KVER}.modules" -C "${TMP_PATH}/modules"
+    tar -zxf "${MODULES_PATH}/${PLATFORM}-${KVER}.tgz" -C "${TMP_PATH}/modules"
   fi
   cp -f ${KOFILE} ${TMP_PATH}/modules
   if [ "${KERNEL}" == "custom" ]; then
     tar -zcf "${CUSTOM_PATH}/modules-${PLATFORM}-${KVER}.tgz" -C "${TMP_PATH}/modules" .
   else
-    tar -zcf "${MODULES_PATH}/${PLATFORM}-${KVER}.modules" -C "${TMP_PATH}/modules" .
+    tar -zcf "${MODULES_PATH}/${PLATFORM}-${KVER}.tgz" -C "${TMP_PATH}/modules" .
   fi
 }
 
@@ -135,13 +135,13 @@ function delToModules() {
   if [ "${KERNEL}" == "custom" ]; then
     tar -zxf "${CUSTOM_PATH}/modules-${PLATFORM}-${KVER}.tgz" -C "${TMP_PATH}/modules"
   else
-    tar -zxf "${MODULES_PATH}/${PLATFORM}-${KVER}.modules" -C "${TMP_PATH}/modules"
+    tar -zxf "${MODULES_PATH}/${PLATFORM}-${KVER}.tgz" -C "${TMP_PATH}/modules"
   fi
   rm -f ${TMP_PATH}/modules/${KONAME}
   if [ "${KERNEL}" == "custom" ]; then
     tar -zcf "${CUSTOM_PATH}/modules-${PLATFORM}-${KVER}.tgz" -C "${TMP_PATH}/modules" .
   else
-    tar -zcf "${MODULES_PATH}/${PLATFORM}-${KVER}.modules" -C "${TMP_PATH}/modules" .
+    tar -zcf "${MODULES_PATH}/${PLATFORM}-${KVER}.tgz" -C "${TMP_PATH}/modules" .
   fi
 }
 
@@ -177,7 +177,7 @@ function getdepends() {
   if [ "${KERNEL}" == "custom" ]; then
     tar -zxf "${CUSTOM_PATH}/modules-${PLATFORM}-${KVER}.tgz" -C "${TMP_PATH}/modules"
   else
-    tar -zxf "${MODULES_PATH}/${PLATFORM}-${KVER}.modules" -C "${TMP_PATH}/modules"
+    tar -zxf "${MODULES_PATH}/${PLATFORM}-${KVER}.tgz" -C "${TMP_PATH}/modules"
   fi
   local DPS=($(_getdepends ${KONAME} | tr ' ' '\n' | sort -u))
   echo ${DPS[@]}
