@@ -10,6 +10,7 @@ set -e
 [ -z "${LOADER_DISK}" ] && die "Loader Disk not found!"
 checkBootLoader || die "The loader is corrupted, please rewrite it!"
 BUS=$(getBus "${LOADER_DISK}")
+[ ! -f /var/run/dhcpcd/pid ] && /etc/init.d/S41dhcpcd restart >/dev/null 2>&1 || true
 
 # Check if machine has EFI
 [ -d /sys/firmware/efi ] && EFI=1 || EFI=0
@@ -96,7 +97,7 @@ fi
 # Read/Write IP/Mac to config
 ETHX="$(ls /sys/class/net 2>/dev/null | grep eth)"
 for ETH in ${ETHX}; do
-  MACR="$(cat /sys/class/net/${ETH}/address 2>/dev/null | sed 's/://g' | tr '[:lower:]' '[:upper:]')"
+  MACR="$(cat /sys/class/net/${ETH}/address 2>/dev/null | sed 's/://g' | tr '[:upper:]' '[:lower:]')"
   IPR="$(readConfigKey "network.${MACR}" "${USER_CONFIG_FILE}")"
   if [ -n "${IPR}" ]; then
     IFS='/' read -r -a IPRA <<<"${IPR}"
@@ -155,7 +156,6 @@ elif [ "${BUILDDONE}" == "true" ] && [ "${ARCMODE}" == "dsm" ]; then
   echo -e "\033[1;34mStarting DSM Mode...\033[0m"
   if [ -f "${ARC_PATH}/boot.sh" ]; then
     boot.sh
-    exit 0
   else
     echo -e "\033[1;31mError: Can't find Arc System Files...\033[0m"
   fi
