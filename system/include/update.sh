@@ -391,6 +391,8 @@ function arcUpdate() {
   dialog --backtitle "$(backtitle)" --title "Update Dependencies" --aspect 18 \
     --infobox "Updating Dependencies..." 0 0
   sleep 3
+  updateSystem
+  [ $? -ne 0 ] && FAILED="true"
   updateAddons
   [ $? -ne 0 ] && FAILED="true"
   updateModules
