@@ -821,7 +821,7 @@ function updateMenu() {
   while true; do
     dialog --backtitle "$(backtitle)" --colors --cancel-label "Exit" \
       --menu "Choose an Option" 0 0 0 \
-      1 "Update Base Image \Z1(no reflash)\Zn" \
+      1 "Update Loader \Z1(no reflash)\Zn" \
       2 "Update Dependencies" \
       3 "Update Arc Patch" \
       2>"${TMP_PATH}/resp"
@@ -1206,7 +1206,7 @@ function networkdiag() {
       fi
     done
     echo
-    GITHUBAPI=$(curl --interface ${ETH} -m 3 -skL https://api.github.com/repos/AuxXxilium/arc/releases/latest | grep "tag_name" | awk '{print substr($2, 2, length($2)-3)}')
+    GITHUBAPI=$(curl --interface ${ETH} -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)
     if [[ $? -ne 0 || -z "${GITHUBAPI}" ]]; then
       echo -e "Github API not reachable!"
     else
@@ -1771,41 +1771,10 @@ function satadomMenu() {
 ###############################################################################
 # Decrypt Menu
 function decryptMenu() {
-  local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-configs/releases" | jq -r ".[].tag_name" | sort -rV | head -1)"
-  if [ -n "${TAG}" ]; then
-    (
-      # Download update file
-      local URL="https://github.com/AuxXxilium/arc-configs/releases/download/${TAG}/arc-configs.zip"
-      echo "Downloading ${TAG}"
-      curl -#kL "${URL}" -o "${TMP_PATH}/configs.zip" 2>&1 | while IFS= read -r -n1 char; do
-        [[ $char =~ [0-9] ]] && keep=1 ;
-        [[ $char == % ]] && echo "Download: $progress%" && progress="" && keep=0 ;
-        [[ $keep == 1 ]] && progress="$progress$char" ;
-      done
-      if [ -f "${TMP_PATH}/configs.zip" ]; then
-        echo "Download successful!"
-        mkdir -p "${MODEL_CONFIG_PATH}"
-        [ -f "${S_FILE}" ] && cp -f "${S_FILE}" "${S_FILE}.bak"
-        echo "Installing new Configs..."
-        unzip -oq "${TMP_PATH}/configs.zip" -d "${MODEL_CONFIG_PATH}"
-        rm -f "${TMP_PATH}/configs.zip"
-        echo "Installation done!"
-        sleep 2
-      else
-        echo "Error extracting new Version!"
-        sleep 5
-      fi
-    ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Arc Decrypt" \
-      --progressbox "Installing Arc Patch Configs..." 20 50
-  else
-    dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
-      --msgbox "Can't connect to Github.\nCheck your Network!" 6 50
-    return 1
-  fi
   if [ -f "${S_FILE_ENC}" ]; then
     CONFIGSVERSION=$(cat "${MODEL_CONFIG_PATH}/VERSION")
     ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
-    if openssl enc -in "${S_FILE_ENC}" -out "${S_FILE_ARC}" -d -aes-128-cbc -k "${ARCKEY}" 2>/dev/null; then
+    if openssl enc -in "${S_FILE_ENC}" -out "${S_FILE_ARC}" -d -aes-256-cbc -k "${ARCKEY}" 2>/dev/null; then
         dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
           --msgbox "Decrypt successful: You can select Arc Patch." 5 50
         mv -f "${S_FILE_ARC}" "${S_FILE}"
@@ -1877,7 +1846,7 @@ function rebootMenu() {
   elif [ "${REDEST}" == "network" ]; then
     clear
     /etc/init.d/S41dhcpcd restart
-    arc.sh
+    init.sh
   else
     rebootTo ${REDEST}
     exit 0
@@ -2069,4 +2038,43 @@ function dtsMenu() {
       ;;
     esac
   done
+}
+
+###############################################################################
+# Get PAT Files
+function getpatfiles() {
+  MODEL="$(readConfigKey "model" "${USER_CONFIG_FILE}")"
+  PRODUCTVER="$(readConfigKey "productver" "${USER_CONFIG_FILE}")"
+  PAT_URL="$(readConfigKey "paturl" "${USER_CONFIG_FILE}")"
+  PAT_HASH="$(readConfigKey "pathash" "${USER_CONFIG_FILE}")"
+  mkdir -p "${USER_UP_PATH}"
+  DSM_FILE="${USER_UP_PATH}/${PAT_HASH}.tar"
+  VALID="false"
+  if [ ! -f "${DSM_FILE}" ]; then
+    rm -f ${USER_UP_PATH}/*.tar
+    dialog --backtitle "$(backtitle)" --colors --title "DSM Version" \
+      --infobox "Downloading DSM Base..." 3 40
+    if [ ! -f "${ORI_ZIMAGE_FILE}" ] || [ ! -f "${ORI_RDGZ_FILE}" ]; then
+      # Get new Files
+      DSM_URL="https://raw.githubusercontent.com/AuxXxilium/arc-dsm/main/files/${MODEL/+/%2B}/${PRODUCTVER}/${PAT_HASH}.tar"
+      if curl -skL "${DSM_URL}" -o "${DSM_FILE}"; then
+        VALID="true"
+      fi
+    fi
+  elif [ -f "${DSM_FILE}" ]; then
+    VALID="true"
+  fi
+  mkdir -p "${UNTAR_PAT_PATH}"
+  if [ "${VALID}" == "true" ]; then
+    dialog --backtitle "$(backtitle)" --title "DSM Extraction" --aspect 18 \
+      --infobox "Copying DSM Files..." 3 40
+    tar -xf "${DSM_FILE}" -C "${UNTAR_PAT_PATH}" 2>/dev/null
+    copyDSMFiles "${UNTAR_PAT_PATH}" 2>/dev/null
+  else
+    dialog --backtitle "$(backtitle)" --title "DSM Extraction" --aspect 18 \
+      --infobox "DSM Extraction failed!\nExit." 4 40
+    sleep 5
+  fi
+  # Cleanup
+  [ -d "${UNTAR_PAT_PATH}" ] && rm -rf "${UNTAR_PAT_PATH}"
 }

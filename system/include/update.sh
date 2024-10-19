@@ -1,11 +1,16 @@
 ###############################################################################
 # Update Loader
 function updateLoader() {
+  local ARC_BRANCH="$(readConfigKey "arc.branch" "${USER_CONFIG_FILE}")"
   local TAG="${1}"
   if [ -z "${TAG}" ]; then
     idx=0
     while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
-      local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-loader/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
+      if [ "${ARC_BRANCH}" == "dev" ]; then
+        local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-loader/releases" | jq -r ".[].tag_name" | grep "dev" | sort -rV | head -1)"
+      else
+        local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-loader/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
+      fi
       if [ -n "${TAG}" ]; then
         break
       fi
@@ -16,16 +21,17 @@ function updateLoader() {
   if [ -n "${TAG}" ]; then
     (
       echo "Downloading ${TAG}"
-      local URL="https://github.com/AuxXxilium/arc/releases/download/${TAG}/update-${TAG}.zip"
+      local URL="https://github.com/AuxXxilium/arc/releases/download/${TAG}/update-${TAG}-${ARC_BRANCH}.zip"
       curl -#kL "${URL}" -o "${TMP_PATH}/update.zip" 2>&1 | while IFS= read -r -n1 char; do
         [[ $char =~ [0-9] ]] && keep=1 ;
         [[ $char == % ]] && echo "$progress%" && progress="" && keep=0 ;
         [[ $keep == 1 ]] && progress="$progress$char" ;
       done
       if [ -f "${TMP_PATH}/update.zip" ]; then
-        echo -e "Downloading Base Image successful!\nUpdating Base Image..."
+        echo -e "Downloading ${TAG}-${ARC_BRANCH} Loader successful!\nUpdating ${ARC_BRANCH} Loader..."
         if unzip -oq "${TMP_PATH}/update.zip" -d "${PART3_PATH}"; then
           echo "${TAG}" > "${PART1_PATH}/ARC-BASE-VERSION"
+          echo "${TAG}" > "${PART1_PATH}/ARC-VERSION"
           echo "Successful!"
           sleep 2
         else
@@ -35,7 +41,7 @@ function updateLoader() {
         updateFailed
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "System" \
-      --progressbox "Installing Base Image..." 20 70
+      --progressbox "Update ${ARC_BRANCH} Loader..." 20 70
   fi
   return 0
 }
@@ -43,16 +49,22 @@ function updateLoader() {
 ###############################################################################
 # Update System
 function updateSystem() {
+  ARC_BRANCH="$(readConfigKey "arc.branch" "${USER_CONFIG_FILE}")"
+  [ -f "${PART1_PATH}/ARC-VERSION" ] && local SYSTEMVERSION="$(cat "${PART1_PATH}/ARC-VERSION")" || SYSTEMVERSION="0.0.0"
   idx=0
   while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
-    local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-system/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
+    if [ "${ARC_BRANCH}" == "dev" ]; then
+      local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-system/releases" | jq -r ".[].tag_name" | grep "dev" | sort -rV | head -1)"
+    else
+      local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-system/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
+    fi
     if [ -n "${TAG}" ]; then
       break
     fi
     sleep 3
     idx=$((${idx} + 1))
   done
-  if [ -n "${TAG}" ]; then
+  if [[ -n "${TAG}" && "${SYSTEMVERSION}" != "${TAG}" ]] || [ "${ARC_BRANCH}" == "dev" ]; then
     (
       local URL="https://github.com/AuxXxilium/arc-system/releases/download/${TAG}/system-${TAG}.zip"
       echo "Downloading ${TAG}"
@@ -77,7 +89,7 @@ function updateSystem() {
         updateFailed
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "System" \
-      --progressbox "Installing System Update..." 20 70
+      --progressbox "Update System..." 20 70
   fi
   return 0
 }
@@ -127,7 +139,7 @@ function updateAddons() {
         updateFailed
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Addons" \
-      --progressbox "Installing Addons..." 20 70
+      --progressbox "Update Addons..." 20 70
   fi
   return 0
 }
@@ -170,7 +182,7 @@ function updatePatches() {
         updateFailed
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Patches" \
-      --progressbox "Installing Patches..." 20 70
+      --progressbox "Update Patches..." 20 70
   fi
   return 0
 }
@@ -213,7 +225,7 @@ function updateCustom() {
         updateFailed
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Custom" \
-      --progressbox "Installing Custom..." 20 70
+      --progressbox "Update Custom..." 20 70
   fi
   return 0
 }
@@ -239,24 +251,29 @@ function updateModules() {
     (
       rm -rf "${MODULES_PATH}"
       mkdir -p "${MODULES_PATH}"
-      local URL="https://github.com/AuxXxilium/arc-modules/releases/download/${TAG}/${PLATFORM}-${KVERP}.modules"
+      local URL="https://github.com/AuxXxilium/arc-modules/releases/download/${TAG}/modules.zip"
       echo "Downloading Modules ${TAG}"
-      curl -#kL "${URL}" -o "${MODULES_PATH}/${PLATFORM}-${KVERP}.modules" 2>&1 | while IFS= read -r -n1 char; do
+      curl -#kL "${URL}" -o "${TMP_PATH}/modules.zip" 2>&1 | while IFS= read -r -n1 char; do
         [[ $char =~ [0-9] ]] && keep=1 ;
         [[ $char == % ]] && echo "$progress%" && progress="" && keep=0 ;
         [[ $keep == 1 ]] && progress="$progress$char" ;
       done
-      echo "Downloading Firmware ${TAG}"
-      local URL="https://github.com/AuxXxilium/arc-modules/releases/download/${TAG}/firmware.modules"
-      curl -#kL "${URL}" -o "${MODULES_PATH}/firmware.modules" 2>&1 | while IFS= read -r -n1 char; do
-        [[ $char =~ [0-9] ]] && keep=1 ;
-        [[ $char == % ]] && echo "$progress%" && progress="" && keep=0 ;
-        [[ $keep == 1 ]] && progress="$progress$char" ;
-      done
+      if [ -f "${TMP_PATH}/modules.zip" ]; then
+        echo "Installing new Modules..."
+        if unzip -oq "${TMP_PATH}/modules.zip" -d "${MODULES_PATH}"; then
+          rm -f "${TMP_PATH}/modules.zip"
+          echo "Successful!"
+        else
+          updateFailed
+        fi
+      else
+        echo "Error downloading new Version!"
+        sleep 5
+        updateFailed
+      fi
       if [ -f "${MODULES_PATH}/${PLATFORM}-${KVERP}.modules" ] && [ -f "${MODULES_PATH}/firmware.modules" ]; then
         echo "${TAG}" > "${MODULES_PATH}/VERSION"
         if [ -n "${PLATFORM}" ] && [ -n "${KVERP}" ]; then
-          echo "Installing Modules..."
           writeConfigKey "modules" "{}" "${USER_CONFIG_FILE}"
           echo "Rebuilding Modules..."
           while read -r ID DESC; do
@@ -264,13 +281,9 @@ function updateModules() {
           done < <(getAllModules "${PLATFORM}" "${KVERP}")
         fi
         echo "Successful!"
-      else
-        echo "Error downloading new Version!"
-        sleep 5
-        updateFailed
       fi
     ) 2>&1 | dialog --backtitle "$(backtitle)" --title "Modules" \
-      --progressbox "Installing Modules..." 20 70
+      --progressbox "Update Modules..." 20 70
   fi
   return 0
 }
@@ -452,75 +465,6 @@ function updateFaileddialog() {
   else
     dialog --backtitle "$(backtitle)" --title "Update Failed" \
       --msgbox "Installation failed!" 0 0
-    return 1
-  fi
-}
-
-###############################################################################
-# Arc Base File download called by init.sh
-function getArcBase() {
-  idx=0
-  while [ ${idx} -le 5 ]; do # Loop 5 times, if successful, break
-    local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
-    if [ -n "${TAG}" ]; then
-      break
-    fi
-    sleep 3
-    idx=$((${idx} + 1))
-  done
-  if [ -n "${TAG}" ]; then
-    (
-      echo "Downloading ${TAG}"
-      local URL="https://github.com/AuxXxilium/arc/releases/download/${TAG}/update-${TAG}.zip"
-      curl -#kL "${URL}" -o "${TMP_PATH}/update.zip" 2>&1 | while IFS= read -r -n1 char; do
-        [[ $char =~ [0-9] ]] && keep=1 ;
-        [[ $char == % ]] && echo "$progress%" && progress="" && keep=0 ;
-        [[ $keep == 1 ]] && progress="$progress$char" ;
-      done
-      if [ -f "${TMP_PATH}/update.zip" ]; then
-        echo -e "Downloading Base Image successful!\nUpdating Base Image..."
-        if unzip -oq "${TMP_PATH}/update.zip" -d "${PART3_PATH}"; then
-          rm -f "${TMP_PATH}/update.zip" >/dev/null
-          echo "${TAG}" > "${PART1_PATH}/ARC-BASE-VERSION"
-          echo "Successful! -> Rebooting..."
-          sleep 2
-        else
-          echo "Failed to unpack Base Image."
-          return 1
-        fi
-      else
-        echo "Failed to download Base Image."
-        return 1
-      fi
-    ) 2>&1 | dialog --backtitle "$(backtitle)" --title "System" \
-      --progressbox "Installing Base Image..." 20 70
-  fi
-  return 0
-}
-
-###############################################################################
-# Arc System Files download called by init.sh
-function getArcSystem() {
-  local CACHE_FILE="/tmp/system.zip"
-  rm -f "${CACHE_FILE}"
-  if [ -n "${1}" ]; then
-    local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-system/releases" | jq -r ".[].tag_name" | grep "dev" | sort -rV | head -1)"
-  else
-    local TAG="$(curl -m 10 -skL "https://api.github.com/repos/AuxXxilium/arc-system/releases" | jq -r ".[].tag_name" | grep -v "dev" | sort -rV | head -1)"
-  fi
-  if curl -skL "https://github.com/AuxXxilium/arc-system/releases/download/${TAG}/system-${TAG}.zip" -o "${CACHE_FILE}"; then
-    mkdir -p "${SYSTEM_PATH}"
-    if unzip -oq "${CACHE_FILE}" -d "${PART3_PATH}" >/dev/null 2>&1; then
-      echo "${TAG}" >"${PART1_PATH}/ARC-VERSION"
-      [ -f "${SYSTEM_PATH}/grub.cfg" ] && cp -f "${SYSTEM_PATH}/grub.cfg" "${USER_GRUB_CONFIG}"
-      rm -f "${CACHE_FILE}"
-      return 0
-    else
-      echo -e "Failed to unpack System Image."
-      return 1
-    fi
-  else
-    echo -e "Failed to download Arc System Files. Check your network connection.\nYou can restart download with 'init.sh' command."
     return 1
   fi
 }

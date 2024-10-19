@@ -35,7 +35,6 @@ fi
 ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
 ARCPATCH="$(readConfigKey "arc.patch" "${USER_CONFIG_FILE}")"
 ARCCONF="$(readConfigKey "${MODEL}.serial" "${S_FILE}")"
-ARCAUTOUPDATE="$(readConfigKey "arc.autoupdate" "${USER_CONFIG_FILE}")"
 BOOTIPWAIT="$(readConfigKey "bootipwait" "${USER_CONFIG_FILE}")"
 DIRECTBOOT="$(readConfigKey "directboot" "${USER_CONFIG_FILE}")"
 EMMCBOOT="$(readConfigKey "emmcboot" "${USER_CONFIG_FILE}")"
@@ -84,7 +83,7 @@ function arcModel() {
   # Loop menu
   RESTRICT=1
   PS="$(readConfigEntriesArray "platforms" "${P_FILE}" | sort)"
-  [ "${ARCMODE}" == "automated" ] && MJ="$(python ${ARC_PATH}/include/functions.py getmodelsoffline -p "${PS[*]}")" || MJ="$(python ${ARC_PATH}/include/functions.py getmodels -p "${PS[*]}")"
+  [[ "${ARCMODE}" == "automated" || -z "${IPCON}" ]] && MJ="$(python ${ARC_PATH}/include/functions.py getmodelsoffline -p "${PS[*]}")" || MJ="$(python ${ARC_PATH}/include/functions.py getmodels -p "${PS[*]}")"
   if [[ -z "${MJ}" || "${MJ}" == "[]" ]]; then
     dialog --backtitle "$(backtitle)" --title "Model" --title "Model" \
       --msgbox "Failed to get models, please try again!" 3 50
@@ -349,7 +348,7 @@ function arcVersion() {
     rm -f "${PART1_PATH}/grub_cksum.syno" "${PART1_PATH}/GRUB_VER" "${PART2_PATH}/"* >/dev/null 2>&1 || true
     rm -f "${USER_UP_PATH}/"*.tar >/dev/null 2>&1 || true
   fi
-  sleep 2
+  getpatfiles
   # Change Config if Files are valid
   if [ "${VALID}" == "true" ]; then
     dialog --backtitle "$(backtitle)" --title "Arc Config" \
@@ -363,7 +362,9 @@ function arcVersion() {
     ADDONS="$(readConfigKey "addons" "${USER_CONFIG_FILE}")"
     DEVICENIC="$(readConfigKey "device.nic" "${USER_CONFIG_FILE}")"
     ARCCONF="$(readConfigKey "${MODEL}.serial" "${S_FILE}")"
-    updateAddons
+    if [ "${ARC_BRANCH}" == "minimal" ]; then
+      updateAddons
+    fi
     if [ "${ADDONS}" == "{}" ]; then
       initConfigKey "addons.acpid" "" "${USER_CONFIG_FILE}"
       initConfigKey "addons.cpuinfo" "" "${USER_CONFIG_FILE}"
@@ -400,8 +401,21 @@ function arcVersion() {
         deleteConfigKey "addons.\"${ADDON}\"" "${USER_CONFIG_FILE}"
       fi
     done < <(readConfigMap "addons" "${USER_CONFIG_FILE}")
-    # Reset Modules
-    updateModules
+    if [ "${ARC_BRANCH}" == "minimal" ]; then
+      updateModules
+    else
+      PRODUCTVER="$(readConfigKey "productver" "${USER_CONFIG_FILE}")"
+      PLATFORM="$(readConfigKey "platform" "${USER_CONFIG_FILE}")"
+      KVER="$(readConfigKey "platforms.${PLATFORM}.productvers.\"${PRODUCTVER}\".kver" "${P_FILE}")"
+      [ "${PLATFORM}" == "epyc7002" ] && KVERP="${PRODUCTVER}-${KVER}" || KVERP="${KVER}"
+      if [ -n "${PLATFORM}" ] && [ -n "${KVERP}" ]; then
+        writeConfigKey "modules" "{}" "${USER_CONFIG_FILE}"
+        echo "Rebuilding Modules..."
+        while read -r ID DESC; do
+          writeConfigKey "modules.${ID}" "" "${USER_CONFIG_FILE}"
+        done < <(getAllModules "${PLATFORM}" "${KVERP}")
+      fi
+    fi
     # Check for Only Version
     if [ "${ONLYVERSION}" == "true" ]; then
       writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
@@ -730,49 +744,11 @@ function make() {
   # Max Memory for DSM
   RAMCONFIG="$((${RAMTOTAL} * 1024 * 2))"
   writeConfigKey "synoinfo.mem_max_mb" "${RAMCONFIG}" "${USER_CONFIG_FILE}"
-  # Update Patches & LKMs
-  updateLKMs
-  updatePatches
-  if [ ! -f "${ORI_ZIMAGE_FILE}" ] || [ ! -f "${ORI_RDGZ_FILE}" ]; then
-    PAT_URL="$(readConfigKey "paturl" "${USER_CONFIG_FILE}")"
-    PAT_HASH="$(readConfigKey "pathash" "${USER_CONFIG_FILE}")"
-    mkdir -p "${USER_UP_PATH}"
-    DSM_FILE="${USER_UP_PATH}/${PAT_HASH}.tar"
-    VALID="false"
-    if [ ! -f "${DSM_FILE}" ]; then
-      dialog --backtitle "$(backtitle)" --colors --title "DSM Version" \
-        --infobox "Downloading DSM Base..." 3 40
-      if [ ! -f "${ORI_ZIMAGE_FILE}" ] || [ ! -f "${ORI_RDGZ_FILE}" ]; then
-        # Get new Files
-        DSM_URL="https://raw.githubusercontent.com/AuxXxilium/arc-dsm/main/files/${MODEL/+/%2B}/${PRODUCTVER}/${PAT_HASH}.tar"
-        if curl -skL "${DSM_URL}" -o "${DSM_FILE}"; then
-          VALID="true"
-        fi
-      fi
-    elif [ -f "${DSM_FILE}" ]; then
-      VALID="true"
-    fi
-    mkdir -p "${UNTAR_PAT_PATH}"
-    if [ -f "${DSM_FILE}" ] && [ "${VALID}" == "true" ]; then
-      tar -xf "${DSM_FILE}" -C "${UNTAR_PAT_PATH}" 2>/dev/null
-      VALID="true"
-    else
-      dialog --backtitle "$(backtitle)" --title "DSM Extraction" --aspect 18 \
-        --infobox "DSM Extraction failed!\nExit." 4 40
-      VALID="false"
-      sleep 5
-    fi
-    # Copy DSM Files to Locations
-    if [ "${VALID}" == "true" ]; then
-      if [ ! -f "${ORI_ZIMAGE_FILE}" ] || [ ! -f "${ORI_RDGZ_FILE}" ]; then
-        dialog --backtitle "$(backtitle)" --title "DSM Extraction" --aspect 18 \
-          --infobox "Copying DSM Files..." 3 40
-        copyDSMFiles "${UNTAR_PAT_PATH}" 2>/dev/null
-      fi
-    fi
-    # Cleanup
-    [ -d "${UNTAR_PAT_PATH}" ] && rm -rf "${UNTAR_PAT_PATH}"
+  if [ "${ARC_BRANCH}" == "minimal" ]; then
+    updateLKMs
+    updatePatches
   fi
+  getpatfiles    
   if [ -f "${ORI_ZIMAGE_FILE}" ] && [ -f "${ORI_RDGZ_FILE}" ] && [ "${CONFDONE}" == "true" ] && [ -n "${PAT_URL}" ] && [ -n "${PAT_HASH}" ]; then
     (
       livepatch
@@ -979,7 +955,6 @@ else
       echo "= \"\Z4========= Loader =========\Zn \" "                                         >>"${TMP_PATH}/menu"
       echo "= \"\Z1=== Edit with caution! ===\Zn \" "                                         >>"${TMP_PATH}/menu"
       echo "D \"StaticIP for Loader/DSM\" "                                                   >>"${TMP_PATH}/menu"
-      echo "c \"Autoupdate Base/System: \Z4${ARCAUTOUPDATE}\Zn \" "                           >>"${TMP_PATH}/menu"
       echo "W \"RD Compression: \Z4${RD_COMPRESSED}\Zn \" "                                   >>"${TMP_PATH}/menu"
       echo "X \"Sata DOM: \Z4${SATADOM}\Zn \" "                                               >>"${TMP_PATH}/menu"
       echo "u \"LKM Version: \Z4${LKM}\Zn \" "                                                >>"${TMP_PATH}/menu"
@@ -1124,10 +1099,6 @@ else
         NEXT="8"
         ;;
       D) staticIPMenu; NEXT="D" ;;
-      c) [ "${ARCAUTOUPDATE}" == "false" ] && ARCAUTOUPDATE='true' || ARCAUTOUPDATE='false'
-        writeConfigKey "arc.autoupdate" "${ARCAUTOUPDATE}" "${USER_CONFIG_FILE}"
-        NEXT="c"
-        ;;
       W) [ "${RD_COMPRESSED}" == "true" ] && RD_COMPRESSED='false' || RD_COMPRESSED='true'
         writeConfigKey "rd-compressed" "${RD_COMPRESSED}" "${USER_CONFIG_FILE}"
         writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
