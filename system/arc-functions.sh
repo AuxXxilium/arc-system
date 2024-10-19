@@ -1804,6 +1804,7 @@ function decryptMenu() {
       done
     fi
   fi
+  ARCCONF="$(readConfigKey "${MODEL}.serial" "${S_FILE}")"
   writeConfigKey "arc.confdone" "false" "${USER_CONFIG_FILE}"
   CONFDONE="$(readConfigKey "arc.confdone" "${USER_CONFIG_FILE}")"
   writeConfigKey "arc.builddone" "false" "${USER_CONFIG_FILE}"
