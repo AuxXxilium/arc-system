@@ -533,7 +533,7 @@ function arcSettings() {
     if [ "${PLATFORM}" == "epyc7002" ]; then
       writeConfigKey "addons.cpufreqscaling" "schedutil" "${USER_CONFIG_FILE}"
     else
-      writeConfigKey "addons.cpufreqscaling" "ondemand" "${USER_CONFIG_FILE}"
+      writeConfigKey "addons.cpufreqscaling" "conservative" "${USER_CONFIG_FILE}"
     fi
   else
     deleteConfigKey "addons.cpufreqscaling" "${USER_CONFIG_FILE}"
