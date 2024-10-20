@@ -1772,6 +1772,10 @@ function satadomMenu() {
 # Decrypt Menu
 function decryptMenu() {
   ARCKEY="$(readConfigKey "arc.key" "${USER_CONFIG_FILE}")"
+  ARCOFFLINE="$(readConfigKey "arc.offline" "${USER_CONFIG_FILE}")"
+  if [ "${ARCOFFLINE}" == "false" ]; then
+    updateConfigs
+  fi
   if openssl enc -in "${S_FILE_ENC}" -out "${S_FILE_ARC}" -d -aes-256-cbc -k "${ARCKEY}" 2>/dev/null; then
       dialog --backtitle "$(backtitle)" --colors --title "Arc Decrypt" \
         --msgbox "Decrypt successful: You can select Arc Patch." 5 50
@@ -2042,6 +2046,7 @@ function dtsMenu() {
 ###############################################################################
 # Get PAT Files
 function getpatfiles() {
+  ARCOFFLINE="$(readConfigKey "arc.offline" "${USER_CONFIG_FILE}")"
   MODEL="$(readConfigKey "model" "${USER_CONFIG_FILE}")"
   PRODUCTVER="$(readConfigKey "productver" "${USER_CONFIG_FILE}")"
   PAT_URL="$(readConfigKey "paturl" "${USER_CONFIG_FILE}")"
@@ -2049,17 +2054,25 @@ function getpatfiles() {
   mkdir -p "${USER_UP_PATH}"
   DSM_FILE="${USER_UP_PATH}/${PAT_HASH}.tar"
   VALID="false"
-  if [ ! -f "${DSM_FILE}" ]; then
+  if [ ! -f "${DSM_FILE}" ] && [ "${ARCOFFLINE}" == "false" ]; then
     rm -f ${USER_UP_PATH}/*.tar
     dialog --backtitle "$(backtitle)" --colors --title "DSM Version" \
       --infobox "Downloading DSM Base..." 3 40
-    if [ ! -f "${ORI_ZIMAGE_FILE}" ] || [ ! -f "${ORI_RDGZ_FILE}" ]; then
-      # Get new Files
-      DSM_URL="https://raw.githubusercontent.com/AuxXxilium/arc-dsm/main/files/${MODEL/+/%2B}/${PRODUCTVER}/${PAT_HASH}.tar"
-      if curl -skL "${DSM_URL}" -o "${DSM_FILE}"; then
-        VALID="true"
-      fi
+    # Get new Files
+    DSM_URL="https://raw.githubusercontent.com/AuxXxilium/arc-dsm/main/files/${MODEL/+/%2B}/${PRODUCTVER}/${PAT_HASH}.tar"
+    if curl -skL "${DSM_URL}" -o "${DSM_FILE}"; then
+      VALID="true"
     fi
+  elif [ ! -f "${DSM_FILE}" ] && [ "${ARCOFFLINE}" == "true" ]; then
+    rm -f ${USER_UP_PATH}/*.tar
+    while true; do
+      dialog --backtitle "$(backtitle)" --colors --title "DSM Version" \
+        --msgbox "Please upload the DSM Base file to ${USER_UP_PATH}.\nLink: https://raw.githubusercontent.com/AuxXxilium/arc-dsm/main/files/${MODEL/+/%2B}/${PRODUCTVER}/${PAT_HASH}.tar\nUse ${IPCON}:7304 and OK after Upload" 0 0
+      if [ -f "${DSM_FILE}" ]; then
+        VALID="true"
+        break
+      fi
+    done
   elif [ -f "${DSM_FILE}" ]; then
     VALID="true"
   fi

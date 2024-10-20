@@ -53,6 +53,7 @@ SASCONTROLLER="$(readConfigKey "device.sascontroller" "${USER_CONFIG_FILE}")"
 
 # Get Config/Build Status
 ARC_BRANCH="$(readConfigKey "arc.branch" "${USER_CONFIG_FILE}")"
+ARCOFFLINE="$(readConfigKey "arc.offline" "${USER_CONFIG_FILE}")"
 CONFDONE="$(readConfigKey "arc.confdone" "${USER_CONFIG_FILE}")"
 BUILDDONE="$(readConfigKey "arc.builddone" "${USER_CONFIG_FILE}")"
 
@@ -82,7 +83,7 @@ function arcModel() {
   # Loop menu
   RESTRICT=1
   PS="$(readConfigEntriesArray "platforms" "${P_FILE}" | sort)"
-  [[ "${ARCMODE}" == "automated" || -z "${IPCON}" ]] && MJ="$(python ${ARC_PATH}/include/functions.py getmodelsoffline -p "${PS[*]}")" || MJ="$(python ${ARC_PATH}/include/functions.py getmodels -p "${PS[*]}")"
+  [[ "${ARCMODE}" == "automated" || "${ARCOFFLINE}" == "true" ]] && MJ="$(python ${ARC_PATH}/include/functions.py getmodelsoffline -p "${PS[*]}")" || MJ="$(python ${ARC_PATH}/include/functions.py getmodels -p "${PS[*]}")"
   if [[ -z "${MJ}" || "${MJ}" == "[]" ]]; then
     dialog --backtitle "$(backtitle)" --title "Model" --title "Model" \
       --msgbox "Failed to get models, please try again!" 3 50
@@ -323,17 +324,19 @@ function arcVersion() {
     else
       ARCMODE="config"
     fi
-    # Check PAT URL
-    dialog --backtitle "$(backtitle)" --colors --title "DSM Version" \
-      --infobox "Check PAT Data..." 3 40
-    if curl --head -skL -m 10 "${PAT_URL}" | head -n 1 | grep -q 404; then
-      VALID="false"
-      writeConfigKey "paturl" "" "${USER_CONFIG_FILE}"
-      writeConfigKey "pathash" "" "${USER_CONFIG_FILE}"
-    else
-      VALID="true"
-      writeConfigKey "paturl" "${PAT_URL}" "${USER_CONFIG_FILE}"
-      writeConfigKey "pathash" "${PAT_HASH}" "${USER_CONFIG_FILE}"
+    if [ "${ARCOFFLINE}" == "false" ]; then
+      # Check PAT URL
+      dialog --backtitle "$(backtitle)" --colors --title "DSM Version" \
+        --infobox "Check PAT Data..." 3 40
+      if curl --head -skL -m 10 "${PAT_URL}" | head -n 1 | grep -q 404; then
+        VALID="false"
+        writeConfigKey "paturl" "" "${USER_CONFIG_FILE}"
+        writeConfigKey "pathash" "" "${USER_CONFIG_FILE}"
+      else
+        VALID="true"
+        writeConfigKey "paturl" "${PAT_URL}" "${USER_CONFIG_FILE}"
+        writeConfigKey "pathash" "${PAT_HASH}" "${USER_CONFIG_FILE}"
+      fi
     fi
   elif [ "${ARCMODE}" == "automated" ] || [ "${ARCRESTORE}" == "true" ]; then
     VALID="true"
