@@ -894,6 +894,8 @@ function networkMenu() {
 function sysinfo() {
   # Get System Informations
   [ -d /sys/firmware/efi ] && BOOTSYS="UEFI" || BOOTSYS="BIOS"
+  HWID="$(readConfigKey "arc.hwid" "${USER_CONFIG_FILE}")"
+  USERID="$(readConfigKey "arc.userid" "${USER_CONFIG_FILE}")"
   CPU=$(echo $(cat /proc/cpuinfo 2>/dev/null | grep 'model name' | uniq | awk -F':' '{print $2}'))
   SECURE=$(dmesg 2>/dev/null | grep -i "Secure Boot" | awk -F'] ' '{print $2}')
   VENDOR=$(dmesg 2>/dev/null | grep -i "DMI:" | head -1 | sed 's/\[.*\] DMI: //i')
@@ -937,7 +939,8 @@ function sysinfo() {
   TIMEOUT=5
   TEXT=""
   # Print System Informations
-  TEXT+="\n\Z4> System: ${MACHINE} | ${BOOTSYS} | ${BUS}\Zn"
+  TEXT+="\n\Z4> HWID | UserID: ${HWID} | ${USERID}\Zn"
+  TEXT+="\n\n\Z4> System: ${MACHINE} | ${BOOTSYS} | ${BUS}\Zn"
   TEXT+="\n  Vendor: \Zb${VENDOR}\Zn"
   TEXT+="\n  CPU: \Zb${CPU}\Zn"
   if [ $(lspci -d ::300 | wc -l) -gt 0 ]; then
@@ -2089,4 +2092,29 @@ function getpatfiles() {
   fi
   # Cleanup
   [ -d "${UNTAR_PAT_PATH}" ] && rm -rf "${UNTAR_PAT_PATH}"
+  return
+}
+
+###############################################################################
+# Generate HardwareID
+function genHardwareID() {
+  HWID="$(echo $(dmidecode -t 4 | grep ID | sed 's/.*ID://;s/ //g') \ $(ifconfig | grep eth0 | awk '{print $NF}' | sed 's/://g') | sha256sum | awk '{print $1}' | cut -c1-12)" 2>/dev/null
+  writeConfigKey arc.hwid "${HWID}" "${USER_CONFIG_FILE}"
+  if [ -n "${HWID}" ]; then
+    HWDB="$(curl -skL "https://auxxxilium.tech/hwid.yml")"
+    if grep -q "${HWID}" "${HWDB}"; then
+      dialog --backtitle "$(backtitle)" --title "HardwareID" \
+        --msgbox "HardwareID: ${HWID}\n\nYour HardwareID is registered!" 0 0
+      USERID="$(grep -q "${HWID}" "${HWDB}" | awk '{print $1}')"
+      writeConfigKey "arc.userid" "${USERID}" "${USER_CONFIG_FILE}"
+    else
+      dialog --backtitle "$(backtitle)" --title "HardwareID" \
+        --msgbox "HardwareID: ${HWID}\n\nYour HardwareID is not registered!" 0 0
+    fi
+  else
+    dialog --backtitle "$(backtitle)" --title "HardwareID" \
+      --msgbox "HardwareID: Verification failed!" 0 0
+    exit 1
+  fi
+  return
 }
