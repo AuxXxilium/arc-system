@@ -939,7 +939,9 @@ function sysinfo() {
   TIMEOUT=5
   TEXT=""
   # Print System Informations
-  TEXT+="\n\Z4> HWID | UserID: ${HWID} | ${USERID}\Zn"
+  if [ -n ${HWID} ] && [ -n "${USERID}" ]; then
+    TEXT+="\n\Z4> HWID | UserID: ${HWID} | ${USERID}\Zn"
+  fi
   TEXT+="\n\n\Z4> System: ${MACHINE} | ${BOOTSYS} | ${BUS}\Zn"
   TEXT+="\n  Vendor: \Zb${VENDOR}\Zn"
   TEXT+="\n  CPU: \Zb${CPU}\Zn"
